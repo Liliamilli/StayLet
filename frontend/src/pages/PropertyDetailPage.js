@@ -298,6 +298,26 @@ export default function PropertyDetailPage() {
         setDocuments(documents.filter(d => d.id !== docId));
     };
 
+    const handleExportReport = async () => {
+        try {
+            const response = await axios.get(`${API_URL}/api/properties/${propertyId}/export`, {
+                responseType: 'blob'
+            });
+            
+            const url = window.URL.createObjectURL(new Blob([response.data]));
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', `${property.name.replace(/[^a-zA-Z0-9 ]/g, '_')}_compliance_report.pdf`);
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            window.URL.revokeObjectURL(url);
+        } catch (error) {
+            console.error('Failed to export report:', error);
+            alert('Failed to export report. Please try again.');
+        }
+    };
+
     const formatLabel = (str) => str?.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ') || '';
 
     if (loading) {
@@ -355,14 +375,24 @@ export default function PropertyDetailPage() {
                             </div>
                         </div>
                     </div>
-                    <Button 
-                        variant="outline" 
-                        onClick={() => setPropertyModalOpen(true)}
-                        data-testid="edit-property-btn"
-                    >
-                        <Pencil className="w-4 h-4 mr-2" />
-                        Edit Property
-                    </Button>
+                    <div className="flex gap-2">
+                        <Button 
+                            variant="outline" 
+                            onClick={handleExportReport}
+                            data-testid="export-report-btn"
+                        >
+                            <FileText className="w-4 h-4 mr-2" />
+                            Export Report
+                        </Button>
+                        <Button 
+                            variant="outline" 
+                            onClick={() => setPropertyModalOpen(true)}
+                            data-testid="edit-property-btn"
+                        >
+                            <Pencil className="w-4 h-4 mr-2" />
+                            Edit Property
+                        </Button>
+                    </div>
                 </div>
 
                 {property.notes && (

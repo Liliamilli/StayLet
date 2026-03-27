@@ -7,7 +7,8 @@ import {
     CreditCard, 
     Settings,
     ChevronLeft,
-    Shield
+    Shield,
+    HelpCircle
 } from 'lucide-react';
 
 const navigation = [
@@ -17,6 +18,7 @@ const navigation = [
     { name: 'Tasks', href: '/app/tasks', icon: ListTodo },
     { name: 'Billing', href: '/app/billing', icon: CreditCard },
     { name: 'Settings', href: '/app/settings', icon: Settings },
+    { name: 'Help', href: '/app/help', icon: HelpCircle },
 ];
 
 export default function Sidebar({ isOpen, onClose }) {

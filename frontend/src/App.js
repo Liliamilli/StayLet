@@ -19,6 +19,7 @@ import TasksPage from "./pages/TasksPage";
 import BillingPage from "./pages/BillingPage";
 import BillingSuccessPage from "./pages/BillingSuccessPage";
 import SettingsPage from "./pages/SettingsPage";
+import HelpPage from "./pages/HelpPage";
 
 function App() {
   return (
@@ -48,6 +49,7 @@ function App() {
             <Route path="billing" element={<BillingPage />} />
             <Route path="billing/success" element={<BillingSuccessPage />} />
             <Route path="settings" element={<SettingsPage />} />
+            <Route path="help" element={<HelpPage />} />
           </Route>
 
           {/* Catch all - redirect to landing */}

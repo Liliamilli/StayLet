@@ -1,6 +1,6 @@
 from fastapi import FastAPI, APIRouter, HTTPException, Depends, UploadFile, File, Form, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, StreamingResponse
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
@@ -17,6 +17,7 @@ import base64
 import aiofiles
 from document_extraction import extract_document_info, format_extracted_for_ui, suggest_category_from_filename
 from emergentintegrations.payments.stripe.checkout import StripeCheckout, CheckoutSessionResponse, CheckoutStatusResponse, CheckoutSessionRequest
+from pdf_generator import generate_compliance_report
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -294,12 +295,23 @@ class UserPreferencesUpdate(BaseModel):
     email_reminders: Optional[bool] = None
     inapp_reminders: Optional[bool] = None
     reminder_lead_days: Optional[List[int]] = None
+    company_name: Optional[str] = None
+    weekly_digest: Optional[bool] = None
+    marketing_emails: Optional[bool] = None
 
 class UserPreferencesResponse(BaseModel):
     model_config = ConfigDict(extra="ignore")
     email_reminders: bool = True
     inapp_reminders: bool = True
     reminder_lead_days: List[int] = [90, 60, 30, 7]
+    company_name: Optional[str] = None
+    weekly_digest: bool = True
+    marketing_emails: bool = False
+
+class ContactFormRequest(BaseModel):
+    subject: str
+    message: str
+    contact_type: str = "support"  # support, billing, feedback
 
 class DocumentResponse(BaseModel):
     model_config = ConfigDict(extra="ignore")
@@ -484,6 +496,27 @@ async def login(credentials: UserLogin):
 async def reset_password(request: PasswordResetRequest):
     _ = await db.users.find_one({"email": request.email.lower()})
     return PasswordResetResponse(message="If an account exists with this email, you will receive password reset instructions.", success=True)
+
+# Change Password
+class ChangePasswordRequest(BaseModel):
+    current_password: str
+    new_password: str
+
+@api_router.post("/auth/change-password")
+async def change_password(request: ChangePasswordRequest, current_user: dict = Depends(get_current_user)):
+    """Change user's password."""
+    # Verify current password
+    if not verify_password(request.current_password, current_user["password"]):
+        raise HTTPException(status_code=400, detail="Current password is incorrect")
+    
+    # Hash new password and update
+    new_hashed = hash_password(request.new_password)
+    await db.users.update_one(
+        {"id": current_user["id"]},
+        {"$set": {"password": new_hashed, "updated_at": datetime.now(timezone.utc).isoformat()}}
+    )
+    
+    return {"success": True, "message": "Password changed successfully"}
 
 @api_router.get("/auth/me", response_model=UserResponse)
 async def get_me(current_user: dict = Depends(get_current_user)):
@@ -956,6 +989,59 @@ async def delete_property(property_id: str, current_user: dict = Depends(get_cur
     await db.tasks.delete_many({"property_id": property_id, "user_id": current_user["id"]})
     return {"message": "Property deleted successfully"}
 
+# Property Compliance Report Export
+@api_router.get("/properties/{property_id}/export")
+async def export_property_report(property_id: str, current_user: dict = Depends(get_current_user)):
+    """Generate and download a PDF compliance report for a property."""
+    # Get property
+    property_data = await db.properties.find_one(
+        {"id": property_id, "user_id": current_user["id"]},
+        {"_id": 0}
+    )
+    if not property_data:
+        raise HTTPException(status_code=404, detail="Property not found")
+    
+    # Get compliance records
+    compliance_records = await db.compliance_records.find(
+        {"property_id": property_id, "user_id": current_user["id"]},
+        {"_id": 0}
+    ).to_list(500)
+    
+    # Get tasks
+    tasks = await db.tasks.find(
+        {"property_id": property_id, "user_id": current_user["id"]},
+        {"_id": 0}
+    ).to_list(500)
+    
+    # Get documents
+    documents = await db.documents.find(
+        {"property_id": property_id, "user_id": current_user["id"]},
+        {"_id": 0}
+    ).to_list(500)
+    
+    # Get user preferences for company name
+    user = await db.users.find_one({"id": current_user["id"]}, {"_id": 0, "company_name": 1})
+    company_name = user.get("company_name") if user else None
+    
+    # Generate PDF
+    pdf_buffer = generate_compliance_report(
+        property_data=property_data,
+        compliance_records=compliance_records,
+        tasks=tasks,
+        documents=documents,
+        company_name=company_name
+    )
+    
+    # Create filename
+    safe_name = "".join(c if c.isalnum() or c in " -_" else "_" for c in property_data.get("name", "property"))
+    filename = f"{safe_name}_compliance_report.pdf"
+    
+    return StreamingResponse(
+        pdf_buffer,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'}
+    )
+
 # Compliance Records Routes
 @api_router.get("/compliance-records", response_model=List[ComplianceRecordResponse])
 async def get_compliance_records(property_id: Optional[str] = None, category: Optional[str] = None, compliance_status: Optional[str] = None, current_user: dict = Depends(get_current_user)):
@@ -1332,7 +1418,10 @@ async def get_user_preferences(current_user: dict = Depends(get_current_user)):
     return UserPreferencesResponse(
         email_reminders=prefs.get("email_reminders", True),
         inapp_reminders=prefs.get("inapp_reminders", True),
-        reminder_lead_days=prefs.get("reminder_lead_days", [90, 60, 30, 7])
+        reminder_lead_days=prefs.get("reminder_lead_days", [90, 60, 30, 7]),
+        company_name=prefs.get("company_name"),
+        weekly_digest=prefs.get("weekly_digest", True),
+        marketing_emails=prefs.get("marketing_emails", False)
     )
 
 @api_router.put("/user/preferences", response_model=UserPreferencesResponse)
@@ -1347,12 +1436,48 @@ async def update_user_preferences(prefs_data: UserPreferencesUpdate, current_use
         upsert=True
     )
     
+    # Also update company_name on user record for PDF reports
+    if "company_name" in update_data:
+        await db.users.update_one(
+            {"id": current_user["id"]},
+            {"$set": {"company_name": update_data["company_name"]}}
+        )
+    
     prefs = await db.user_preferences.find_one({"user_id": current_user["id"]}, {"_id": 0})
     return UserPreferencesResponse(
         email_reminders=prefs.get("email_reminders", True),
         inapp_reminders=prefs.get("inapp_reminders", True),
-        reminder_lead_days=prefs.get("reminder_lead_days", [90, 60, 30, 7])
+        reminder_lead_days=prefs.get("reminder_lead_days", [90, 60, 30, 7]),
+        company_name=prefs.get("company_name"),
+        weekly_digest=prefs.get("weekly_digest", True),
+        marketing_emails=prefs.get("marketing_emails", False)
     )
+
+# Contact Form
+@api_router.post("/contact")
+async def submit_contact_form(form_data: ContactFormRequest, current_user: dict = Depends(get_current_user)):
+    """Submit a support/contact request."""
+    now = datetime.now(timezone.utc).isoformat()
+    contact_id = str(uuid.uuid4())
+    
+    contact_doc = {
+        "id": contact_id,
+        "user_id": current_user["id"],
+        "user_email": current_user["email"],
+        "subject": form_data.subject,
+        "message": form_data.message,
+        "contact_type": form_data.contact_type,
+        "status": "pending",
+        "created_at": now
+    }
+    
+    await db.contact_requests.insert_one(contact_doc)
+    
+    return {
+        "success": True,
+        "message": "Thank you for contacting us. We'll get back to you within 24 hours.",
+        "ticket_id": contact_id
+    }
 
 # Subscription Management Routes
 @api_router.get("/subscription", response_model=SubscriptionResponse)
