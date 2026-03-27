@@ -148,7 +148,7 @@ Build a SaaS web app called Staylet that helps UK short-term let hosts track com
 ## Prioritized Backlog
 
 ### P0 (Next)
-- Integrate Stripe for actual payment processing
+- ~~Integrate Stripe for actual payment processing~~ ✅ COMPLETED
 - Show uploaded documents on compliance record cards
 - Document preview for images and PDFs
 
@@ -161,6 +161,30 @@ Build a SaaS web app called Staylet that helps UK short-term let hosts track com
 - Mobile app or PWA
 - API access for Business tier
 - Reporting and analytics dashboard
+
+## Recent Implementations
+
+### Stripe Payment Integration (March 27, 2026)
+- **Stripe Checkout Integration**:
+  - Created checkout session API `/api/payments/checkout`
+  - Secure Stripe redirect for subscription payments
+  - Support for monthly and annual billing cycles
+  - Payment transactions collection for tracking
+
+- **Payment Status Polling**:
+  - Status check API `/api/payments/status/{session_id}`
+  - Frontend polling on success page
+  - Automatic subscription activation on payment success
+
+- **Webhook Support**:
+  - Stripe webhook handler `/api/webhook/stripe`
+  - Payment status updates via webhooks
+
+- **UI Updates**:
+  - BillingPage shows "Subscribe" button for trial users
+  - Payment Method section shows "Secure Stripe Checkout"
+  - BillingSuccessPage with payment verification polling
+  - Redirects to Stripe checkout on subscription click
 
 ## Next Tasks
 1. Display uploaded documents on compliance record detail view

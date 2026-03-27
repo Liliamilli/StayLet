@@ -43,12 +43,19 @@ function PlanCard({ plan, planKey, isCurrentPlan, subscription, onSelect, loadin
     );
     const isDowngrade = plan.property_limit < (subscription?.property_limit || 1);
     const cantDowngrade = isDowngrade && (subscription?.property_count || 0) > plan.property_limit;
+    const isTrial = subscription?.status === 'trial' || subscription?.status === 'expired';
     
     const monthlyPrice = plan.price_monthly;
     const yearlyPrice = plan.price_yearly;
     const yearlyMonthly = Math.round(yearlyPrice / 12);
     const savings = (monthlyPrice * 12) - yearlyPrice;
     const savingsPercent = Math.round((savings / (monthlyPrice * 12)) * 100);
+
+    const getButtonText = () => {
+        if (isDowngrade) return 'Downgrade';
+        if (isTrial) return 'Subscribe';
+        return 'Upgrade';
+    };
 
     return (
         <div className={`
@@ -130,15 +137,14 @@ function PlanCard({ plan, planKey, isCurrentPlan, subscription, onSelect, loadin
                     onClick={() => onSelect(planKey)}
                     disabled={loading}
                     className={`w-full ${isDowngrade ? 'bg-slate-600 hover:bg-slate-700' : colors.accent + ' hover:opacity-90'} text-white`}
+                    data-testid={`plan-${planKey}-btn`}
                 >
                     {loading ? (
                         <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    ) : isDowngrade ? (
-                        'Downgrade'
                     ) : (
                         <>
-                            Upgrade
-                            <ArrowRight className="w-4 h-4 ml-2" />
+                            {getButtonText()}
+                            {!isDowngrade && <ArrowRight className="w-4 h-4 ml-2" />}
                         </>
                     )}
                 </Button>
@@ -171,21 +177,54 @@ export default function BillingPage() {
     };
 
     const handlePlanChange = async (planKey) => {
-        if (!window.confirm(`Are you sure you want to ${plans[planKey].property_limit > subscription.property_limit ? 'upgrade' : 'downgrade'} to the ${plans[planKey].name} plan?`)) {
-            return;
-        }
-
-        setChangingPlan(true);
-        setSelectedPlan(planKey);
-        try {
-            await axios.post(`${API_URL}/api/subscription/change`, { plan: planKey });
-            await refreshSubscription();
-        } catch (error) {
-            console.error('Failed to change plan:', error);
-            alert(error.response?.data?.detail || 'Failed to change plan. Please try again.');
-        } finally {
-            setChangingPlan(false);
-            setSelectedPlan(null);
+        const planInfo = plans[planKey];
+        const isUpgrade = planInfo.property_limit > subscription.property_limit;
+        const billingCycle = isAnnual ? 'annual' : 'monthly';
+        const price = isAnnual ? planInfo.price_yearly : planInfo.price_monthly;
+        
+        // For upgrades, redirect to Stripe checkout
+        if (isUpgrade || subscription.status === 'trial' || subscription.status === 'expired') {
+            const confirmMessage = `You're about to subscribe to the ${planInfo.name} plan for £${price}/${isAnnual ? 'year' : 'month'}. Continue to secure checkout?`;
+            if (!window.confirm(confirmMessage)) {
+                return;
+            }
+            
+            setChangingPlan(true);
+            setSelectedPlan(planKey);
+            
+            try {
+                const response = await axios.post(`${API_URL}/api/payments/checkout`, {
+                    plan: planKey,
+                    billing_cycle: billingCycle,
+                    origin_url: window.location.origin
+                });
+                
+                // Redirect to Stripe checkout
+                window.location.href = response.data.checkout_url;
+            } catch (error) {
+                console.error('Failed to create checkout session:', error);
+                alert(error.response?.data?.detail || 'Failed to start checkout. Please try again.');
+                setChangingPlan(false);
+                setSelectedPlan(null);
+            }
+        } else {
+            // For downgrades (active paid users), use direct plan change
+            if (!window.confirm(`Are you sure you want to downgrade to the ${planInfo.name} plan?`)) {
+                return;
+            }
+            
+            setChangingPlan(true);
+            setSelectedPlan(planKey);
+            try {
+                await axios.post(`${API_URL}/api/subscription/change`, { plan: planKey });
+                await refreshSubscription();
+            } catch (error) {
+                console.error('Failed to change plan:', error);
+                alert(error.response?.data?.detail || 'Failed to change plan. Please try again.');
+            } finally {
+                setChangingPlan(false);
+                setSelectedPlan(null);
+            }
         }
     };
 
@@ -370,7 +409,7 @@ export default function BillingPage() {
                 </div>
             </div>
 
-            {/* Payment Method Placeholder */}
+            {/* Payment Method */}
             <div className="mt-6 bg-white rounded-xl border border-slate-200 p-6">
                 <h2 className="text-lg font-semibold text-slate-900 mb-4 flex items-center gap-2" style={{ fontFamily: 'Outfit, sans-serif' }}>
                     <CreditCard className="w-5 h-5 text-slate-400" />
@@ -379,17 +418,17 @@ export default function BillingPage() {
                 
                 <div className="flex items-center justify-between p-4 bg-slate-50 rounded-lg">
                     <div className="flex items-center gap-3">
-                        <div className="w-10 h-7 bg-slate-200 rounded flex items-center justify-center">
-                            <CreditCard className="w-5 h-5 text-slate-400" />
+                        <div className="w-10 h-7 bg-gradient-to-r from-indigo-500 to-purple-500 rounded flex items-center justify-center">
+                            <CreditCard className="w-5 h-5 text-white" />
                         </div>
-                        <span className="text-sm text-slate-500">No payment method added</span>
+                        <div>
+                            <span className="text-sm font-medium text-slate-700">Secure Stripe Checkout</span>
+                            <p className="text-xs text-slate-500">Payment info collected securely at checkout</p>
+                        </div>
                     </div>
-                    <Button variant="outline" size="sm" disabled>
-                        Add Card
-                    </Button>
                 </div>
                 <p className="text-xs text-slate-400 mt-3">
-                    Payment processing via Stripe coming soon. Your trial doesn't require a card.
+                    When you subscribe, you'll be redirected to Stripe's secure checkout to enter your payment details.
                 </p>
             </div>
         </div>

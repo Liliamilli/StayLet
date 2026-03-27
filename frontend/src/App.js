@@ -17,6 +17,7 @@ import PropertyDetailPage from "./pages/PropertyDetailPage";
 import CompliancePage from "./pages/CompliancePage";
 import TasksPage from "./pages/TasksPage";
 import BillingPage from "./pages/BillingPage";
+import BillingSuccessPage from "./pages/BillingSuccessPage";
 import SettingsPage from "./pages/SettingsPage";
 
 function App() {
@@ -45,6 +46,7 @@ function App() {
             <Route path="compliance" element={<CompliancePage />} />
             <Route path="tasks" element={<TasksPage />} />
             <Route path="billing" element={<BillingPage />} />
+            <Route path="billing/success" element={<BillingSuccessPage />} />
             <Route path="settings" element={<SettingsPage />} />
           </Route>
 
