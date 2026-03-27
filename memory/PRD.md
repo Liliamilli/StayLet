@@ -281,15 +281,41 @@ Build a SaaS web app called Staylet that helps UK short-term let hosts track com
   - BillingSuccessPage with payment verification polling
   - Redirects to Stripe checkout on subscription click
 
-## Next Tasks
-1. Display uploaded documents on compliance record detail view
-2. Add inline document preview (images and PDF first page)
-3. Implement real email notifications via SendGrid/Resend
-4. Build Stripe billing integration
+### Audit-Ready Export & Polish (December 2025)
+- **PDF Compliance Reports**:
+  - `/api/properties/{id}/export` endpoint generates PDF using ReportLab
+  - Property details, compliance summary, records table, tasks, documents
+  - Color-coded status (compliant=green, expiring_soon=amber, overdue=red)
+  - Company name branding support via user preferences
+  - Download via "Export Report" button on property detail page
+
+- **Enhanced Settings Page**:
+  - Complete rewrite with 4 tabbed sections:
+  - Account Tab: User info (read-only), Company Name (editable)
+  - Notifications Tab: In-app/Email/Weekly digest/Marketing toggles, Reminder timing selection
+  - Security Tab: Password change form with validation (8+ chars, match check)
+  - Support Tab: Contact form with type selector (Support/Billing/Feedback)
+
+- **Help Center Page**:
+  - Getting Started: 4-step onboarding guide
+  - FAQ: 4 categories with expandable accordion
+  - Contact Support CTA linking to Settings
+
+## Next Tasks (P1)
+1. Refactor `server.py` (2100+ lines) into modular `/routes/` and `/models/` directories
+2. Implement real email integration for notifications and password reset (SendGrid/Resend)
+
+## Future Tasks (P2)
+1. Team access / multi-user support
+2. Social login (Google Auth)
+3. Mobile app / PWA
+4. API access for Operator tier
 
 ## Mocked Functionality
 - **Password Reset**: Returns success message without actually sending email
-- **Email Reminders**: UI toggle exists with "Coming soon" badge, preference saved but no actual email
+- **Email Notifications**: UI toggle exists with "Coming soon" badge, preference saved but no actual email
+- **Weekly Digest**: Toggle exists with "Coming soon" badge, no actual email
+- **Contact Form**: Saves to database but doesn't send actual email
 
 ## Key API Endpoints
 
@@ -302,8 +328,13 @@ Build a SaaS web app called Staylet that helps UK short-term let hosts track com
 - DELETE `/api/documents/{id}` - Delete document
 - GET `/api/compliance-records/{record_id}/documents` - Get record's documents
 
+### New Endpoints (December 2025)
+- GET `/api/properties/{id}/export` - Generate PDF compliance report
+- POST `/api/auth/change-password` - Change user's password
+- POST `/api/contact` - Submit support/billing/feedback request
+
 ### Other Endpoints (Previous Phases)
-- Auth: `/api/auth/signup`, `/api/auth/login`, `/api/auth/forgot-password`
+- Auth: `/api/auth/signup`, `/api/auth/login`, `/api/auth/forgot-password`, `/api/auth/demo`
 - Properties: `/api/properties`, `/api/properties/{id}`
 - Compliance: `/api/compliance-records`, `/api/compliance-records/{id}`, `/api/compliance-records/bulk`
 - Tasks: `/api/tasks`, `/api/tasks/{id}`, `/api/tasks/templates`
