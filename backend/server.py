@@ -958,6 +958,22 @@ async def get_property(property_id: str, current_user: dict = Depends(get_curren
 
 @api_router.post("/properties", response_model=PropertyResponse)
 async def create_property(property_data: PropertyCreate, current_user: dict = Depends(get_current_user)):
+    # Check plan limit before creating property
+    plan = current_user.get("subscription_plan", "solo")
+    plan_info = SUBSCRIPTION_PLANS.get(plan, SUBSCRIPTION_PLANS["solo"])
+    property_limit = plan_info["property_limit"]
+    
+    current_count = await db.properties.count_documents({
+        "user_id": current_user["id"],
+        "property_status": "active"
+    })
+    
+    if current_count >= property_limit:
+        raise HTTPException(
+            status_code=403, 
+            detail=f"Property limit reached. Your {plan_info['name']} plan allows {property_limit} {'property' if property_limit == 1 else 'properties'}. Please upgrade to add more."
+        )
+    
     # Validate required fields are not empty
     if not property_data.name or not property_data.name.strip():
         raise HTTPException(status_code=400, detail="Property name is required")

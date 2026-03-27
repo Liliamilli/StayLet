@@ -1,18 +1,21 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '../ui/dialog';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Checkbox } from '../ui/checkbox';
-import { Loader2 } from 'lucide-react';
+import { Loader2, AlertCircle, ArrowRight } from 'lucide-react';
 import axios from 'axios';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
 
 export default function PropertyModal({ isOpen, onClose, onSave, property }) {
+    const navigate = useNavigate();
     const [loading, setLoading] = useState(false);
     const [constants, setConstants] = useState(null);
+    const [limitReached, setLimitReached] = useState(false);
     const [formData, setFormData] = useState({
         name: '',
         address: '',
@@ -87,7 +90,13 @@ export default function PropertyModal({ isOpen, onClose, onSave, property }) {
             console.error('Save error:', error);
             // Display backend validation errors
             const errorMsg = error.response?.data?.detail;
-            if (errorMsg) {
+            const statusCode = error.response?.status;
+            
+            if (statusCode === 403 && errorMsg?.includes('limit')) {
+                // Plan limit reached
+                setLimitReached(true);
+                setErrors({ general: errorMsg });
+            } else if (errorMsg) {
                 if (errorMsg.includes('name')) setErrors(prev => ({ ...prev, name: errorMsg }));
                 else if (errorMsg.includes('address')) setErrors(prev => ({ ...prev, address: errorMsg }));
                 else if (errorMsg.includes('postcode')) setErrors(prev => ({ ...prev, postcode: errorMsg }));
@@ -113,6 +122,31 @@ export default function PropertyModal({ isOpen, onClose, onSave, property }) {
                         {property ? 'Update the property details below.' : 'Enter the property details below.'}
                     </DialogDescription>
                 </DialogHeader>
+
+                {/* Plan limit error */}
+                {limitReached && (
+                    <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                        <div className="flex items-start gap-3">
+                            <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                            <div className="flex-1">
+                                <p className="text-sm font-medium text-amber-800">Property limit reached</p>
+                                <p className="text-sm text-amber-700 mt-1">{errors.general}</p>
+                                <Button
+                                    type="button"
+                                    size="sm"
+                                    className="mt-3 bg-amber-600 hover:bg-amber-700 text-white"
+                                    onClick={() => {
+                                        onClose();
+                                        navigate('/app/billing');
+                                    }}
+                                >
+                                    Upgrade Plan
+                                    <ArrowRight className="w-4 h-4 ml-1" />
+                                </Button>
+                            </div>
+                        </div>
+                    </div>
+                )}
 
                 <form onSubmit={handleSubmit} className="space-y-4 py-4">
                     <div className="space-y-2">

@@ -1,4 +1,5 @@
 import { NavLink, useLocation } from 'react-router-dom';
+import { useAuth } from '../../contexts/AuthContext';
 import { 
     LayoutDashboard, 
     Building2, 
@@ -8,7 +9,8 @@ import {
     Settings,
     ChevronLeft,
     Shield,
-    HelpCircle
+    HelpCircle,
+    Crown
 } from 'lucide-react';
 
 const navigation = [
@@ -21,8 +23,20 @@ const navigation = [
     { name: 'Help', href: '/app/help', icon: HelpCircle },
 ];
 
+const PLAN_DISPLAY = {
+    solo: { name: 'Solo', color: 'text-slate-700' },
+    portfolio: { name: 'Portfolio', color: 'text-blue-700' },
+    operator: { name: 'Operator', color: 'text-purple-700' }
+};
+
 export default function Sidebar({ isOpen, onClose }) {
     const location = useLocation();
+    const { user } = useAuth();
+
+    const plan = user?.subscription_plan || 'solo';
+    const status = user?.subscription_status || 'trial';
+    const planInfo = PLAN_DISPLAY[plan] || PLAN_DISPLAY.solo;
+    const isTrialOrActive = status === 'trial' || status === 'active';
 
     const isActive = (href) => {
         if (href === '/app') {
@@ -99,20 +113,30 @@ export default function Sidebar({ isOpen, onClose }) {
                     })}
                 </nav>
 
-                {/* Bottom section */}
+                {/* Bottom section - Plan info */}
                 <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-slate-200">
                     <div className="bg-slate-50 rounded-lg p-4">
                         <p className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-1">
                             Current Plan
                         </p>
-                        <p className="text-sm font-semibold text-slate-900 mb-2">Free Trial</p>
-                        <NavLink 
-                            to="/app/billing"
-                            className="text-xs font-medium text-blue-600 hover:text-blue-700 transition-colors"
-                            data-testid="upgrade-link"
-                        >
-                            Upgrade Plan →
-                        </NavLink>
+                        <div className="flex items-center gap-1.5 mb-2">
+                            {plan === 'operator' && <Crown className="w-3.5 h-3.5 text-purple-600" />}
+                            <p className={`text-sm font-semibold ${planInfo.color}`}>
+                                {planInfo.name}
+                                {status === 'trial' && (
+                                    <span className="ml-1.5 text-xs font-normal text-amber-600">(Trial)</span>
+                                )}
+                            </p>
+                        </div>
+                        {(status === 'trial' || plan === 'solo') && (
+                            <NavLink 
+                                to="/app/billing"
+                                className="text-xs font-medium text-blue-600 hover:text-blue-700 transition-colors"
+                                data-testid="upgrade-link"
+                            >
+                                Upgrade Plan →
+                            </NavLink>
+                        )}
                     </div>
                 </div>
             </aside>
