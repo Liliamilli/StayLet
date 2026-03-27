@@ -13,6 +13,7 @@ import ResetPasswordPage from "./pages/ResetPasswordPage";
 // Protected pages
 import DashboardPage from "./pages/DashboardPage";
 import PropertiesPage from "./pages/PropertiesPage";
+import PropertyDetailPage from "./pages/PropertyDetailPage";
 import CompliancePage from "./pages/CompliancePage";
 import TasksPage from "./pages/TasksPage";
 import BillingPage from "./pages/BillingPage";
@@ -40,6 +41,7 @@ function App() {
           >
             <Route index element={<DashboardPage />} />
             <Route path="properties" element={<PropertiesPage />} />
+            <Route path="properties/:propertyId" element={<PropertyDetailPage />} />
             <Route path="compliance" element={<CompliancePage />} />
             <Route path="tasks" element={<TasksPage />} />
             <Route path="billing" element={<BillingPage />} />

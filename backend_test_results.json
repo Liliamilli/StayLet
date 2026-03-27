@@ -1,8 +1,8 @@
 {
   "summary": {
     "tests_run": 16,
-    "tests_passed": 14,
-    "success_rate": 87.5
+    "tests_passed": 13,
+    "success_rate": 81.25
   },
   "results": [
     {
@@ -37,8 +37,8 @@
     },
     {
       "test": "Dashboard Stats Structure",
-      "success": true,
-      "details": ""
+      "success": false,
+      "details": "Missing fields: ['missing_documents']"
     },
     {
       "test": "Get Properties (Empty)",
