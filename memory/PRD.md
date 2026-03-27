@@ -358,9 +358,26 @@ Build a SaaS web app called Staylet that helps UK short-term let hosts track com
   - 6 sample tasks
   - Onboarding marked as completed
 
+### Refactoring & Email Integration (December 2025)
+- **Code Modularization**:
+  - Reduced `server.py` from 2181 to 1829 lines
+  - Created `/routes/auth.py` - All authentication endpoints
+  - Created `/models/database.py` - MongoDB connection and config
+  - Created `/models/schemas.py` - All Pydantic models
+  - Created `/utils/auth.py` - JWT, password utilities
+  - Created `/utils/constants.py` - Plans, categories, settings
+  - Created `/utils/email_service.py` - Resend email integration
+
+- **Email Service (Resend)**:
+  - Professional HTML email templates
+  - Password reset emails (when API key configured)
+  - Welcome emails on signup (when API key configured)
+  - Expiry reminder email template ready
+  - Graceful fallback when RESEND_API_KEY not set
+
 ## Next Tasks (P1)
-1. Refactor `server.py` (2100+ lines) into modular `/routes/` and `/models/` directories
-2. Implement real email integration for notifications and password reset (SendGrid/Resend)
+1. Continue refactoring: Extract properties, compliance, tasks, billing routes
+2. Configure RESEND_API_KEY in production for real email sending
 
 ## Future Tasks (P2)
 1. Team access / multi-user support
@@ -369,10 +386,9 @@ Build a SaaS web app called Staylet that helps UK short-term let hosts track com
 4. API access for Operator tier
 
 ## Mocked Functionality
-- **Password Reset**: Returns success message without actually sending email
-- **Email Notifications**: UI toggle exists with "Coming soon" badge, preference saved but no actual email
-- **Weekly Digest**: Toggle exists with "Coming soon" badge, no actual email
-- **Contact Form**: Saves to database but doesn't send actual email
+- **Email Notifications**: Works when RESEND_API_KEY is configured. UI toggle exists with "Coming soon" badge, preference saved. Email templates ready.
+- **Weekly Digest**: Toggle exists with "Coming soon" badge, template available
+- **Contact Form**: Saves to database, email notification ready when configured
 
 ## Key API Endpoints
 
