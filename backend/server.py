@@ -1,5 +1,6 @@
-from fastapi import FastAPI, APIRouter, HTTPException, Depends
+from fastapi import FastAPI, APIRouter, HTTPException, Depends, UploadFile, File, Form
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi.responses import FileResponse
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
@@ -12,9 +13,23 @@ import uuid
 from datetime import datetime, timezone, timedelta
 import bcrypt
 import jwt
+import base64
+import aiofiles
+from document_extraction import extract_document_info, format_extracted_for_ui, suggest_category_from_filename
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
+
+# File upload configuration
+UPLOAD_DIR = ROOT_DIR / "uploads"
+UPLOAD_DIR.mkdir(exist_ok=True)
+MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB
+ALLOWED_FILE_TYPES = {
+    "application/pdf": ".pdf",
+    "image/png": ".png",
+    "image/jpeg": ".jpg",
+    "image/jpg": ".jpg"
+}
 
 mongo_url = os.environ['MONGO_URL']
 client = AsyncIOMotorClient(mongo_url)
@@ -205,6 +220,29 @@ class UserPreferencesResponse(BaseModel):
     email_reminders: bool = True
     inapp_reminders: bool = True
     reminder_lead_days: List[int] = [90, 60, 30, 7]
+
+class DocumentResponse(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str
+    compliance_record_id: Optional[str] = None
+    user_id: str
+    filename: str
+    original_filename: str
+    file_type: str
+    file_size: int
+    uploaded_at: str
+
+class ExtractionSuggestion(BaseModel):
+    value: Optional[str] = None
+    label: Optional[str] = None
+    raw_text: Optional[str] = None
+    confidence: str = "LOW"
+    is_suggested: bool = True
+
+class ExtractionResult(BaseModel):
+    success: bool
+    error: Optional[str] = None
+    suggestions: Optional[dict] = None
 
 class DashboardStats(BaseModel):
     total_properties: int = 0
@@ -901,8 +939,214 @@ async def get_constants():
         "task_priorities": TASK_PRIORITIES,
         "task_categories": TASK_CATEGORIES,
         "notification_types": NOTIFICATION_TYPES,
-        "reminder_intervals": REMINDER_INTERVALS
+        "reminder_intervals": REMINDER_INTERVALS,
+        "allowed_file_types": list(ALLOWED_FILE_TYPES.keys()),
+        "max_file_size": MAX_FILE_SIZE
     }
+
+# Document Upload and Extraction Routes
+@api_router.post("/documents/upload")
+async def upload_document(
+    file: UploadFile = File(...),
+    compliance_record_id: Optional[str] = Form(None),
+    current_user: dict = Depends(get_current_user)
+):
+    """Upload a document file. Optionally link to a compliance record."""
+    # Validate file type
+    if file.content_type not in ALLOWED_FILE_TYPES:
+        raise HTTPException(status_code=400, detail="File type not allowed. Allowed types: PDF, PNG, JPG")
+    
+    # Read file content
+    content = await file.read()
+    
+    # Validate file size
+    if len(content) > MAX_FILE_SIZE:
+        raise HTTPException(status_code=400, detail=f"File too large. Maximum size: {MAX_FILE_SIZE // (1024*1024)}MB")
+    
+    # Generate unique filename
+    file_ext = ALLOWED_FILE_TYPES[file.content_type]
+    file_id = str(uuid.uuid4())
+    stored_filename = f"{file_id}{file_ext}"
+    file_path = UPLOAD_DIR / stored_filename
+    
+    # Save file
+    async with aiofiles.open(file_path, 'wb') as f:
+        await f.write(content)
+    
+    # Store document metadata
+    now = datetime.now(timezone.utc).isoformat()
+    doc_record = {
+        "id": file_id,
+        "user_id": current_user["id"],
+        "compliance_record_id": compliance_record_id,
+        "filename": stored_filename,
+        "original_filename": file.filename,
+        "file_type": file.content_type,
+        "file_size": len(content),
+        "uploaded_at": now
+    }
+    
+    await db.documents.insert_one(doc_record)
+    
+    return DocumentResponse(**doc_record)
+
+@api_router.post("/documents/upload-and-extract")
+async def upload_and_extract_document(
+    file: UploadFile = File(...),
+    current_user: dict = Depends(get_current_user)
+):
+    """Upload a document and extract compliance information using AI."""
+    # Validate file type
+    if file.content_type not in ALLOWED_FILE_TYPES:
+        raise HTTPException(status_code=400, detail="File type not allowed. Allowed types: PDF, PNG, JPG")
+    
+    # Read file content
+    content = await file.read()
+    
+    # Validate file size
+    if len(content) > MAX_FILE_SIZE:
+        raise HTTPException(status_code=400, detail=f"File too large. Maximum size: {MAX_FILE_SIZE // (1024*1024)}MB")
+    
+    # Generate unique filename
+    file_ext = ALLOWED_FILE_TYPES[file.content_type]
+    file_id = str(uuid.uuid4())
+    stored_filename = f"{file_id}{file_ext}"
+    file_path = UPLOAD_DIR / stored_filename
+    
+    # Save file
+    async with aiofiles.open(file_path, 'wb') as f:
+        await f.write(content)
+    
+    # Store document metadata (not linked to compliance record yet)
+    now = datetime.now(timezone.utc).isoformat()
+    doc_record = {
+        "id": file_id,
+        "user_id": current_user["id"],
+        "compliance_record_id": None,  # Will be linked after user confirms
+        "filename": stored_filename,
+        "original_filename": file.filename,
+        "file_type": file.content_type,
+        "file_size": len(content),
+        "uploaded_at": now
+    }
+    
+    await db.documents.insert_one(doc_record)
+    
+    # Encode file to base64 for extraction
+    file_base64 = base64.b64encode(content).decode('utf-8')
+    
+    # Run extraction
+    extraction_result = await extract_document_info(file_base64, file.filename, file.content_type)
+    formatted_result = format_extracted_for_ui(extraction_result)
+    
+    # If extraction failed, try filename-based suggestion
+    if not formatted_result.get("success") or not formatted_result.get("suggestions", {}).get("category"):
+        suggested_category = suggest_category_from_filename(file.filename)
+        if suggested_category:
+            if "suggestions" not in formatted_result:
+                formatted_result["suggestions"] = {}
+            formatted_result["suggestions"]["category"] = {
+                "value": suggested_category,
+                "label": "Suggested from filename",
+                "confidence": "LOW",
+                "is_suggested": True
+            }
+    
+    return {
+        "document": DocumentResponse(**doc_record),
+        "extraction": formatted_result
+    }
+
+@api_router.get("/documents/{document_id}")
+async def get_document(document_id: str, current_user: dict = Depends(get_current_user)):
+    """Get document metadata."""
+    doc = await db.documents.find_one(
+        {"id": document_id, "user_id": current_user["id"]},
+        {"_id": 0}
+    )
+    if not doc:
+        raise HTTPException(status_code=404, detail="Document not found")
+    return DocumentResponse(**doc)
+
+@api_router.get("/documents/{document_id}/download")
+async def download_document(document_id: str, current_user: dict = Depends(get_current_user)):
+    """Download a document file."""
+    doc = await db.documents.find_one(
+        {"id": document_id, "user_id": current_user["id"]},
+        {"_id": 0}
+    )
+    if not doc:
+        raise HTTPException(status_code=404, detail="Document not found")
+    
+    file_path = UPLOAD_DIR / doc["filename"]
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail="File not found on server")
+    
+    return FileResponse(
+        path=str(file_path),
+        filename=doc["original_filename"],
+        media_type=doc["file_type"]
+    )
+
+@api_router.get("/compliance-records/{record_id}/documents", response_model=List[DocumentResponse])
+async def get_compliance_record_documents(record_id: str, current_user: dict = Depends(get_current_user)):
+    """Get all documents for a compliance record."""
+    documents = await db.documents.find(
+        {"compliance_record_id": record_id, "user_id": current_user["id"]},
+        {"_id": 0}
+    ).to_list(100)
+    return documents
+
+@api_router.put("/documents/{document_id}/link")
+async def link_document_to_record(
+    document_id: str, 
+    compliance_record_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Link an uploaded document to a compliance record."""
+    # Verify document exists and belongs to user
+    doc = await db.documents.find_one(
+        {"id": document_id, "user_id": current_user["id"]},
+        {"_id": 0}
+    )
+    if not doc:
+        raise HTTPException(status_code=404, detail="Document not found")
+    
+    # Verify compliance record exists and belongs to user
+    record = await db.compliance_records.find_one(
+        {"id": compliance_record_id, "user_id": current_user["id"]},
+        {"_id": 0, "id": 1}
+    )
+    if not record:
+        raise HTTPException(status_code=404, detail="Compliance record not found")
+    
+    # Update document
+    await db.documents.update_one(
+        {"id": document_id, "user_id": current_user["id"]},
+        {"$set": {"compliance_record_id": compliance_record_id}}
+    )
+    
+    return {"message": "Document linked successfully"}
+
+@api_router.delete("/documents/{document_id}")
+async def delete_document(document_id: str, current_user: dict = Depends(get_current_user)):
+    """Delete a document."""
+    doc = await db.documents.find_one(
+        {"id": document_id, "user_id": current_user["id"]},
+        {"_id": 0}
+    )
+    if not doc:
+        raise HTTPException(status_code=404, detail="Document not found")
+    
+    # Delete file from disk
+    file_path = UPLOAD_DIR / doc["filename"]
+    if file_path.exists():
+        file_path.unlink()
+    
+    # Delete from database
+    await db.documents.delete_one({"id": document_id, "user_id": current_user["id"]})
+    
+    return {"message": "Document deleted successfully"}
 
 @api_router.get("/")
 async def root():

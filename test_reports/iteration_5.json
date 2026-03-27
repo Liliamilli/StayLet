@@ -1,0 +1,108 @@
+{
+  "summary": "Phase 4 Document Upload and Extraction testing completed. All 14 backend tests passed (100%). Frontend UI verified: Upload Document button on property detail page, dropzone modal with AI extraction disclaimer, extraction review flow with form fields and confidence indicators.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "passed_tests": [
+    "Backend: Constants endpoint returns allowed_file_types (PDF, PNG, JPG) and max_file_size (10MB)",
+    "Backend: Document upload accepts PDF files",
+    "Backend: Document upload accepts PNG images",
+    "Backend: Document upload accepts JPG images",
+    "Backend: Document upload rejects invalid file types (returns 400)",
+    "Backend: Document upload with compliance_record_id links document to record",
+    "Backend: Upload-and-extract endpoint returns document and extraction suggestions",
+    "Backend: Document download serves file correctly",
+    "Backend: Document download returns 404 for non-existent document",
+    "Backend: Document delete removes file from database and disk",
+    "Backend: Document delete returns 404 for non-existent document",
+    "Backend: Link document to compliance record works",
+    "Backend: Link document to non-existent record returns 404",
+    "Backend: Get compliance record documents returns linked documents",
+    "Frontend: Property detail page shows 'Upload Document' button with sparkle icon",
+    "Frontend: Upload Document modal opens with dropzone",
+    "Frontend: Modal shows AI extraction disclaimer ('AI-powered extraction • Results may vary • Always verify dates')",
+    "Frontend: File upload triggers extraction and shows Review & Confirm screen",
+    "Frontend: Extraction review shows form fields (Document Title, Category, Issue Date, Expiry Date, Notes)",
+    "Frontend: Extraction review shows Cancel and Create Record buttons",
+    "Frontend: DocumentList component has download, preview, delete functionality"
+  ],
+  "test_report_links": [
+    "/app/backend/tests/test_phase4_documents.py",
+    "/app/test_reports/pytest/pytest_phase4_results.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [],
+  "updated_files": [
+    "/app/backend/tests/test_phase4_documents.py"
+  ],
+  "success_rate": {
+    "backend": "100% (14 passed)",
+    "frontend": "100%"
+  },
+  "test_credentials": {
+    "email": "bugtest@staylet.com",
+    "password": "Test1234!"
+  },
+  "seed_data_creation": "Test documents created during testing were cleaned up automatically",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Phase 4 document upload features verified: Backend supports PDF/PNG/JPG up to 10MB with upload, download, delete, and link-to-record endpoints. Upload-and-extract uses GPT-4o vision via emergentintegrations (EMERGENT_LLM_KEY configured). Frontend has Upload Document button on property detail page that opens modal with dropzone. Extraction review shows confidence badges and form fields. Email reminders still MOCKED. Existing test data: 2 properties with compliance records.",
+  "mocked_features": {
+    "email_reminders": "UI toggle exists with 'Coming soon' badge, preference is saved but no actual email sending",
+    "password_reset": "Returns success without sending email"
+  },
+  "verified_phase4_features": {
+    "document_upload": {
+      "endpoint": "/api/documents/upload",
+      "accepts": ["application/pdf", "image/png", "image/jpeg", "image/jpg"],
+      "max_size": "10MB",
+      "optional_link": "compliance_record_id parameter to link on upload"
+    },
+    "upload_and_extract": {
+      "endpoint": "/api/documents/upload-and-extract",
+      "returns": "document metadata + extraction suggestions",
+      "ai_service": "GPT-4o vision via emergentintegrations",
+      "fallback": "Filename-based category suggestion if AI extraction fails"
+    },
+    "document_download": {
+      "endpoint": "/api/documents/{id}/download",
+      "returns": "FileResponse with original filename"
+    },
+    "document_delete": {
+      "endpoint": "/api/documents/{id}",
+      "removes": "File from disk and database record"
+    },
+    "link_document": {
+      "endpoint": "/api/documents/{id}/link",
+      "params": "compliance_record_id query parameter"
+    },
+    "get_record_documents": {
+      "endpoint": "/api/compliance-records/{id}/documents",
+      "returns": "List of documents linked to the record"
+    },
+    "frontend_upload_modal": {
+      "trigger": "Upload Document button on property detail page",
+      "dropzone": "Accepts drag-and-drop or click to browse",
+      "disclaimer": "AI-powered extraction • Results may vary • Always verify dates"
+    },
+    "extraction_review": {
+      "screen": "Review & Confirm modal after upload",
+      "fields": ["Document Title", "Category (dropdown)", "Issue Date", "Expiry Date", "Notes"],
+      "confidence_badges": "HIGH/MEDIUM/LOW indicators (when AI extracts successfully)",
+      "actions": ["Cancel (deletes uploaded doc)", "Create Record (creates compliance record and links doc)"]
+    },
+    "document_list": {
+      "component": "DocumentList.js",
+      "features": ["Filename display", "File size", "Upload date", "Download button", "Delete button", "Preview for images"]
+    },
+    "constants_endpoint": {
+      "new_fields": ["allowed_file_types", "max_file_size"]
+    }
+  }
+}

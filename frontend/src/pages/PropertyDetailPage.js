@@ -18,12 +18,17 @@ import {
     Zap,
     ListTodo,
     MoreVertical,
-    RefreshCw
+    RefreshCw,
+    Upload,
+    FileText,
+    Sparkles
 } from 'lucide-react';
 import PropertyModal from '../components/properties/PropertyModal';
 import ComplianceRecordModal from '../components/compliance/ComplianceRecordModal';
 import BulkComplianceModal from '../components/compliance/BulkComplianceModal';
 import TaskModal from '../components/tasks/TaskModal';
+import UploadDocumentModal from '../components/documents/UploadDocumentModal';
+import DocumentList from '../components/documents/DocumentList';
 import EmptyState from '../components/shared/EmptyState';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
@@ -119,6 +124,7 @@ export default function PropertyDetailPage() {
     const [complianceModalOpen, setComplianceModalOpen] = useState(false);
     const [bulkModalOpen, setBulkModalOpen] = useState(false);
     const [taskModalOpen, setTaskModalOpen] = useState(false);
+    const [uploadModalOpen, setUploadModalOpen] = useState(false);
     const [editingRecord, setEditingRecord] = useState(null);
 
     const fetchData = async () => {
@@ -334,6 +340,15 @@ export default function PropertyDetailPage() {
                             </Button>
                         )}
                         <Button 
+                            variant="outline"
+                            onClick={() => setUploadModalOpen(true)}
+                            className="border-purple-200 text-purple-700 hover:bg-purple-50"
+                            data-testid="upload-document-btn"
+                        >
+                            <Sparkles className="w-4 h-4 mr-2" />
+                            Upload Document
+                        </Button>
+                        <Button 
                             onClick={() => { setEditingRecord(null); setComplianceModalOpen(true); }}
                             className="bg-blue-600 hover:bg-blue-700 text-white"
                             data-testid="add-compliance-btn"
@@ -522,6 +537,17 @@ export default function PropertyDetailPage() {
                 onClose={() => setTaskModalOpen(false)}
                 onSave={handleSaveTask}
                 propertyId={propertyId}
+            />
+
+            <UploadDocumentModal
+                isOpen={uploadModalOpen}
+                onClose={() => setUploadModalOpen(false)}
+                propertyId={propertyId}
+                mode="extract"
+                onRecordCreated={(record) => {
+                    setComplianceRecords([...complianceRecords, record]);
+                    fetchData(); // Refresh to get updated summary
+                }}
             />
         </div>
     );
