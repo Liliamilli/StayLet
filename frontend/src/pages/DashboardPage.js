@@ -5,6 +5,7 @@ import { useAuth } from '../contexts/AuthContext';
 import DashboardCard from '../components/shared/DashboardCard';
 import OnboardingWizard from '../components/onboarding/OnboardingWizard';
 import EmptyState from '../components/shared/EmptyState';
+import DashboardAssistant from '../components/assistant/DashboardAssistant';
 import { 
     Building2, 
     Clock, 
@@ -273,7 +274,14 @@ export default function DashboardPage() {
                     variant="featured"
                 />
             ) : (
-                <div className="space-y-6">
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    {/* AI Assistant Panel - Left sidebar on large screens */}
+                    <div className="lg:col-span-1 order-2 lg:order-1">
+                        <DashboardAssistant onNavigate={(path) => navigate(path)} />
+                    </div>
+
+                    {/* Main Content - Right side on large screens */}
+                    <div className="lg:col-span-2 space-y-6 order-1 lg:order-2">
                     {/* Overdue Alert Section - Most prominent if there are overdue items */}
                     {overdueRecords.length > 0 && (
                         <div className="bg-red-50 border border-red-200 rounded-lg overflow-hidden">
@@ -492,6 +500,7 @@ export default function DashboardPage() {
                                 <ArrowRight className="w-4 h-4" />
                             </Button>
                         </div>
+                    </div>
                     </div>
                 </div>
             )}

@@ -18,6 +18,7 @@ import aiofiles
 from document_extraction import extract_document_info, format_extracted_for_ui, suggest_category_from_filename
 from emergentintegrations.payments.stripe.checkout import StripeCheckout, CheckoutSessionResponse, CheckoutStatusResponse, CheckoutSessionRequest
 from pdf_generator import generate_compliance_report
+from ai_assistant import get_structured_insights, get_property_insights, answer_natural_language_query
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -2113,6 +2114,33 @@ async def delete_document(document_id: str, current_user: dict = Depends(get_cur
     await db.documents.delete_one({"id": document_id, "user_id": current_user["id"]})
     
     return {"message": "Document deleted successfully"}
+
+# AI Assistant Routes
+class AssistantQueryRequest(BaseModel):
+    question: str
+
+@api_router.get("/assistant/insights")
+async def get_assistant_insights(current_user: dict = Depends(get_current_user)):
+    """Get structured compliance insights for the dashboard."""
+    insights = await get_structured_insights(db, current_user["id"])
+    return insights
+
+@api_router.get("/assistant/property/{property_id}")
+async def get_property_assistant_insights(property_id: str, current_user: dict = Depends(get_current_user)):
+    """Get AI insights for a specific property."""
+    insights = await get_property_insights(db, current_user["id"], property_id)
+    if "error" in insights:
+        raise HTTPException(status_code=404, detail=insights["error"])
+    return insights
+
+@api_router.post("/assistant/ask")
+async def ask_assistant(request: AssistantQueryRequest, current_user: dict = Depends(get_current_user)):
+    """Ask a natural language question about compliance data."""
+    if not request.question.strip():
+        raise HTTPException(status_code=400, detail="Question cannot be empty")
+    
+    response = await answer_natural_language_query(db, current_user["id"], request.question)
+    return response
 
 @api_router.get("/")
 async def root():

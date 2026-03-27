@@ -34,6 +34,7 @@ import UploadDocumentModal from '../components/documents/UploadDocumentModal';
 import DocumentList from '../components/documents/DocumentList';
 import DocumentPreviewModal from '../components/documents/DocumentPreviewModal';
 import EmptyState from '../components/shared/EmptyState';
+import PropertyAssistant from '../components/assistant/PropertyAssistant';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
 
@@ -422,6 +423,24 @@ export default function PropertyDetailPage() {
                         <p className="text-xs text-slate-500">Missing</p>
                     </div>
                 </div>
+            </div>
+
+            {/* AI Property Assistant */}
+            <div className="mb-6">
+                <PropertyAssistant 
+                    propertyId={propertyId}
+                    onAddCompliance={(category) => {
+                        setEditingRecord(null);
+                        setComplianceModalOpen(true);
+                    }}
+                    onViewRecord={(recordId) => {
+                        const record = complianceRecords.find(r => r.id === recordId);
+                        if (record) {
+                            setEditingRecord(record);
+                            setComplianceModalOpen(true);
+                        }
+                    }}
+                />
             </div>
 
             {/* Compliance records */}
