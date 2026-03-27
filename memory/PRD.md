@@ -162,6 +162,37 @@ Build a SaaS web app called Staylet that helps UK short-term let hosts track com
 - API access for Business tier
 - Reporting and analytics dashboard
 
+### Onboarding and Demo Mode (March 27, 2026)
+- **Demo Mode** (`/api/auth/demo`):
+  - One-click demo from landing page "Try Demo Mode" button
+  - Creates temporary demo account with Portfolio plan
+  - Seeds 3 realistic UK properties:
+    - Victoria Terrace Apartment (London, SW1V 1AA)
+    - Cotswold Cottage (Cotswolds, GL54 2HN)
+    - Edinburgh Old Town Flat (Scotland, EH1 1QS)
+  - Seeds 12 compliance records with mixed statuses (compliant, expiring_soon, overdue)
+  - Seeds 6 tasks with varied priorities and due dates
+  - Purple "Demo Mode" banner with "Start Free Trial" CTA
+
+- **Onboarding Wizard** (`OnboardingWizard.js`):
+  - Appears after signup for new users
+  - 3-step guided onboarding:
+    1. Add your first property
+    2. Add a compliance record
+    3. See your dashboard
+  - Progress bar showing completion percentage
+  - Skip functionality (X button or "Skip for now" link)
+  - Tracks completion via `/api/user/onboarding` endpoints
+
+- **Improved Empty States** (`EmptyState.js`):
+  - New `variant="featured"` with gradient background
+  - Tips and hints to help users get started
+  - Context-specific messaging for each page
+  - Dashboard: "Most hosts add their first property in under 15 minutes"
+  - Properties: "Track specific requirements for England, Scotland, Wales, or Northern Ireland"
+  - Tasks: "Use recurring tasks for annual inspections"
+  - Compliance: "Smart document extraction can read PDFs automatically"
+
 ### Landing Page Conversion Redesign (March 27, 2026)
 - **Hero Section**: New headline "Stop chasing certificates. Start staying compliant."
   - Trust badge "Built for UK short-let hosts"
