@@ -153,6 +153,7 @@ export default function BillingPage() {
     const [loading, setLoading] = useState(true);
     const [changingPlan, setChangingPlan] = useState(false);
     const [selectedPlan, setSelectedPlan] = useState(null);
+    const [isAnnual, setIsAnnual] = useState(false);
 
     useEffect(() => {
         fetchPlans();
@@ -302,9 +303,40 @@ export default function BillingPage() {
 
             {/* Plans Grid */}
             <div className="mb-8">
-                <h2 className="text-lg font-semibold text-slate-900 mb-4" style={{ fontFamily: 'Outfit, sans-serif' }}>
-                    Available Plans
-                </h2>
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+                    <h2 className="text-lg font-semibold text-slate-900" style={{ fontFamily: 'Outfit, sans-serif' }}>
+                        Available Plans
+                    </h2>
+                    
+                    {/* Annual/Monthly Toggle */}
+                    <div className="flex items-center gap-3 bg-slate-100 rounded-lg p-1" data-testid="billing-cycle-toggle">
+                        <button
+                            onClick={() => setIsAnnual(false)}
+                            className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                                !isAnnual 
+                                    ? 'bg-white text-slate-900 shadow-sm' 
+                                    : 'text-slate-500 hover:text-slate-700'
+                            }`}
+                            data-testid="monthly-toggle-btn"
+                        >
+                            Monthly
+                        </button>
+                        <button
+                            onClick={() => setIsAnnual(true)}
+                            className={`px-4 py-2 rounded-md text-sm font-medium transition-all flex items-center gap-2 ${
+                                isAnnual 
+                                    ? 'bg-white text-slate-900 shadow-sm' 
+                                    : 'text-slate-500 hover:text-slate-700'
+                            }`}
+                            data-testid="annual-toggle-btn"
+                        >
+                            Annual
+                            <span className="bg-emerald-100 text-emerald-700 text-xs font-semibold px-2 py-0.5 rounded-full">
+                                Save 17%
+                            </span>
+                        </button>
+                    </div>
+                </div>
                 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     {plans && Object.entries(plans).map(([key, plan]) => (
@@ -316,6 +348,7 @@ export default function BillingPage() {
                             subscription={subscription}
                             onSelect={handlePlanChange}
                             loading={changingPlan && selectedPlan === key}
+                            isAnnual={isAnnual}
                         />
                     ))}
                 </div>

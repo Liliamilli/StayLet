@@ -41,9 +41,8 @@ const benefits = [
 const pricingPlans = [
     {
         name: 'Solo',
-        price: '£19',
-        period: '/month',
-        yearlyPrice: '£190/year',
+        monthlyPrice: 19,
+        yearlyPrice: 190,
         description: 'Perfect for single property hosts',
         features: [
             '1 property',
@@ -59,9 +58,8 @@ const pricingPlans = [
     },
     {
         name: 'Portfolio',
-        price: '£39',
-        period: '/month',
-        yearlyPrice: '£390/year',
+        monthlyPrice: 39,
+        yearlyPrice: 390,
         description: 'For hosts with multiple properties',
         features: [
             'Up to 5 properties',
@@ -77,9 +75,8 @@ const pricingPlans = [
     },
     {
         name: 'Operator',
-        price: '£79',
-        period: '/month',
-        yearlyPrice: '£790/year',
+        monthlyPrice: 79,
+        yearlyPrice: 790,
         description: 'For professional property managers',
         features: [
             'Up to 15 properties',
@@ -122,6 +119,7 @@ export default function LandingPage() {
     const navigate = useNavigate();
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [openFaq, setOpenFaq] = useState(null);
+    const [isAnnual, setIsAnnual] = useState(false);
 
     return (
         <div className="min-h-screen bg-white">
@@ -303,7 +301,7 @@ export default function LandingPage() {
             {/* Pricing Section */}
             <section id="pricing" className="py-20 md:py-28">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="text-center mb-16">
+                    <div className="text-center mb-12">
                         <span className="inline-block px-4 py-1.5 bg-blue-100 text-blue-700 rounded-full text-sm font-medium mb-4">
                             Pricing
                         </span>
@@ -313,14 +311,46 @@ export default function LandingPage() {
                         >
                             Simple, transparent pricing
                         </h2>
-                        <p className="text-lg text-slate-600 max-w-2xl mx-auto">
+                        <p className="text-lg text-slate-600 max-w-2xl mx-auto mb-8">
                             14-day free trial on all plans. No credit card required.
                         </p>
+                        
+                        {/* Annual/Monthly Toggle */}
+                        <div className="flex items-center justify-center gap-3 bg-slate-100 rounded-lg p-1 w-fit mx-auto" data-testid="landing-billing-toggle">
+                            <button
+                                onClick={() => setIsAnnual(false)}
+                                className={`px-5 py-2.5 rounded-md text-sm font-medium transition-all ${
+                                    !isAnnual 
+                                        ? 'bg-white text-slate-900 shadow-sm' 
+                                        : 'text-slate-500 hover:text-slate-700'
+                                }`}
+                                data-testid="landing-monthly-toggle"
+                            >
+                                Monthly
+                            </button>
+                            <button
+                                onClick={() => setIsAnnual(true)}
+                                className={`px-5 py-2.5 rounded-md text-sm font-medium transition-all flex items-center gap-2 ${
+                                    isAnnual 
+                                        ? 'bg-white text-slate-900 shadow-sm' 
+                                        : 'text-slate-500 hover:text-slate-700'
+                                }`}
+                                data-testid="landing-annual-toggle"
+                            >
+                                Annual
+                                <span className="bg-emerald-100 text-emerald-700 text-xs font-semibold px-2 py-0.5 rounded-full">
+                                    Save 17%
+                                </span>
+                            </button>
+                        </div>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
                         {pricingPlans.map((plan, index) => {
                             const Icon = plan.icon;
+                            const displayPrice = isAnnual ? Math.round(plan.yearlyPrice / 12) : plan.monthlyPrice;
+                            const savings = (plan.monthlyPrice * 12) - plan.yearlyPrice;
+                            
                             return (
                                 <div 
                                     key={index}
@@ -340,6 +370,14 @@ export default function LandingPage() {
                                             </span>
                                         </div>
                                     )}
+                                    
+                                    {isAnnual && (
+                                        <div className="absolute -top-3 right-4">
+                                            <span className="bg-emerald-500 text-white text-xs font-semibold px-2 py-1 rounded-full">
+                                                Save £{savings}/yr
+                                            </span>
+                                        </div>
+                                    )}
 
                                     <div className={`w-12 h-12 rounded-xl flex items-center justify-center mb-4 ${
                                         plan.popular ? 'bg-blue-100' : 'bg-slate-100'
@@ -354,12 +392,16 @@ export default function LandingPage() {
                                     
                                     <div className="mb-2">
                                         <span className="text-4xl font-bold text-slate-900" style={{ fontFamily: 'Outfit, sans-serif' }}>
-                                            {plan.price}
+                                            £{displayPrice}
                                         </span>
-                                        <span className="text-slate-500">{plan.period}</span>
+                                        <span className="text-slate-500">/month</span>
                                     </div>
                                     <p className="text-sm text-slate-400 mb-6">
-                                        or {plan.yearlyPrice} <span className="text-emerald-600">(save 17%)</span>
+                                        {isAnnual ? (
+                                            <>£{plan.yearlyPrice} billed annually</>
+                                        ) : (
+                                            <>or £{plan.yearlyPrice}/year <span className="text-emerald-600">(save 17%)</span></>
+                                        )}
                                     </p>
 
                                     <ul className="space-y-3 mb-8">

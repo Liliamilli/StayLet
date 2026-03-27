@@ -118,6 +118,8 @@ Build a SaaS web app called Staylet that helps UK short-term let hosts track com
 - **Billing Page**:
   - Current subscription display (plan, status, properties, price)
   - All 3 plan cards with upgrade/downgrade buttons
+  - **Monthly/Annual pricing toggle** with "Save 17%" badge
+  - Annual view shows equivalent monthly price and yearly savings per plan
   - Trial banner with countdown
   - Billing history placeholder
   - Payment method placeholder (Stripe ready)
@@ -125,7 +127,9 @@ Build a SaaS web app called Staylet that helps UK short-term let hosts track com
 - **Landing Page Pricing**:
   - Premium 3-column pricing cards
   - "Most Popular" badge on Portfolio plan
-  - Annual pricing with 17% savings shown
+  - **Monthly/Annual pricing toggle** with "Save 17%" badge
+  - Dynamic pricing display based on toggle selection
+  - Per-plan savings badges (e.g., "Save £78/yr" on Portfolio)
   - Feature comparison for each plan
 
 - **Subscription APIs**:
