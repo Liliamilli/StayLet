@@ -21,7 +21,10 @@ import {
     RefreshCw,
     Upload,
     FileText,
-    Sparkles
+    Sparkles,
+    Paperclip,
+    Eye,
+    Image as ImageIcon
 } from 'lucide-react';
 import PropertyModal from '../components/properties/PropertyModal';
 import ComplianceRecordModal from '../components/compliance/ComplianceRecordModal';
@@ -29,6 +32,7 @@ import BulkComplianceModal from '../components/compliance/BulkComplianceModal';
 import TaskModal from '../components/tasks/TaskModal';
 import UploadDocumentModal from '../components/documents/UploadDocumentModal';
 import DocumentList from '../components/documents/DocumentList';
+import DocumentPreviewModal from '../components/documents/DocumentPreviewModal';
 import EmptyState from '../components/shared/EmptyState';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
@@ -53,7 +57,7 @@ const categoryLabels = {
     custom: 'Custom'
 };
 
-function ComplianceCard({ record, onEdit, onDelete }) {
+function ComplianceCard({ record, onEdit, onDelete, documents = [], onPreviewDocument }) {
     const status = statusConfig[record.compliance_status] || statusConfig.compliant;
     const StatusIcon = status.icon;
     
@@ -61,6 +65,11 @@ function ComplianceCard({ record, onEdit, onDelete }) {
         if (!dateStr) return 'Not set';
         return new Date(dateStr).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
     };
+
+    const recordDocuments = documents.filter(d => d.compliance_record_id === record.id);
+    const hasDocuments = recordDocuments.length > 0;
+    const firstDoc = recordDocuments[0];
+    const isImage = firstDoc?.file_type?.startsWith('image/');
 
     return (
         <div 
@@ -72,6 +81,12 @@ function ComplianceCard({ record, onEdit, onDelete }) {
                     <span className={`px-2 py-0.5 rounded text-xs font-medium ${status.bg} ${status.text}`}>
                         {categoryLabels[record.category] || record.category}
                     </span>
+                    {hasDocuments && (
+                        <span className="flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-blue-50 text-blue-600">
+                            <Paperclip className="w-3 h-3" />
+                            {recordDocuments.length}
+                        </span>
+                    )}
                 </div>
                 <div className="flex items-center gap-1">
                     <button 
@@ -109,6 +124,39 @@ function ComplianceCard({ record, onEdit, onDelete }) {
             {record.notes && (
                 <p className="mt-2 text-sm text-slate-500 line-clamp-2">{record.notes}</p>
             )}
+
+            {/* Document thumbnails */}
+            {hasDocuments && (
+                <div className="mt-3 pt-3 border-t border-slate-100">
+                    <div className="flex items-center gap-2 flex-wrap">
+                        {recordDocuments.slice(0, 3).map((doc) => {
+                            const docIsImage = doc.file_type?.startsWith('image/');
+                            return (
+                                <button
+                                    key={doc.id}
+                                    onClick={() => onPreviewDocument(doc, recordDocuments)}
+                                    className="flex items-center gap-1.5 px-2 py-1 bg-slate-50 hover:bg-slate-100 rounded text-xs text-slate-600 transition-colors group"
+                                    title={doc.original_filename}
+                                    data-testid={`doc-preview-${doc.id}`}
+                                >
+                                    {docIsImage ? (
+                                        <ImageIcon className="w-3.5 h-3.5 text-purple-500" />
+                                    ) : (
+                                        <FileText className="w-3.5 h-3.5 text-blue-500" />
+                                    )}
+                                    <span className="max-w-[100px] truncate">{doc.original_filename}</span>
+                                    <Eye className="w-3 h-3 text-slate-400 opacity-0 group-hover:opacity-100" />
+                                </button>
+                            );
+                        })}
+                        {recordDocuments.length > 3 && (
+                            <span className="px-2 py-1 bg-slate-100 rounded text-xs text-slate-500">
+                                +{recordDocuments.length - 3} more
+                            </span>
+                        )}
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
@@ -119,6 +167,7 @@ export default function PropertyDetailPage() {
     const [property, setProperty] = useState(null);
     const [complianceRecords, setComplianceRecords] = useState([]);
     const [tasks, setTasks] = useState([]);
+    const [documents, setDocuments] = useState([]);
     const [loading, setLoading] = useState(true);
     const [propertyModalOpen, setPropertyModalOpen] = useState(false);
     const [complianceModalOpen, setComplianceModalOpen] = useState(false);
@@ -126,6 +175,9 @@ export default function PropertyDetailPage() {
     const [taskModalOpen, setTaskModalOpen] = useState(false);
     const [uploadModalOpen, setUploadModalOpen] = useState(false);
     const [editingRecord, setEditingRecord] = useState(null);
+    const [previewModalOpen, setPreviewModalOpen] = useState(false);
+    const [previewDocument, setPreviewDocument] = useState(null);
+    const [previewDocuments, setPreviewDocuments] = useState([]);
 
     const fetchData = async () => {
         try {
@@ -137,6 +189,17 @@ export default function PropertyDetailPage() {
             setProperty(propRes.data);
             setComplianceRecords(compRes.data);
             setTasks(taskRes.data);
+            
+            // Fetch documents for all compliance records
+            const recordIds = compRes.data.map(r => r.id);
+            if (recordIds.length > 0) {
+                const docPromises = recordIds.map(id => 
+                    axios.get(`${API_URL}/api/compliance-records/${id}/documents`).catch(() => ({ data: [] }))
+                );
+                const docResults = await Promise.all(docPromises);
+                const allDocs = docResults.flatMap(res => res.data);
+                setDocuments(allDocs);
+            }
         } catch (error) {
             console.error('Failed to fetch property data:', error);
             if (error.response?.status === 404) {
@@ -223,6 +286,16 @@ export default function PropertyDetailPage() {
         } catch (error) {
             console.error('Failed to delete task:', error);
         }
+    };
+
+    const handlePreviewDocument = (doc, docs) => {
+        setPreviewDocument(doc);
+        setPreviewDocuments(docs || [doc]);
+        setPreviewModalOpen(true);
+    };
+
+    const handleDocumentDelete = (docId) => {
+        setDocuments(documents.filter(d => d.id !== docId));
     };
 
     const formatLabel = (str) => str?.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ') || '';
@@ -397,6 +470,8 @@ export default function PropertyDetailPage() {
                                 record={record}
                                 onEdit={(r) => { setEditingRecord(r); setComplianceModalOpen(true); }}
                                 onDelete={handleDeleteComplianceRecord}
+                                documents={documents}
+                                onPreviewDocument={handlePreviewDocument}
                             />
                         ))}
                     </div>
@@ -548,6 +623,14 @@ export default function PropertyDetailPage() {
                     setComplianceRecords([...complianceRecords, record]);
                     fetchData(); // Refresh to get updated summary
                 }}
+            />
+
+            <DocumentPreviewModal
+                isOpen={previewModalOpen}
+                onClose={() => { setPreviewModalOpen(false); setPreviewDocument(null); }}
+                document={previewDocument}
+                documents={previewDocuments}
+                onNavigate={(doc) => setPreviewDocument(doc)}
             />
         </div>
     );
