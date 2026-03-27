@@ -514,6 +514,272 @@ async def get_me(current_user: dict = Depends(get_current_user)):
         property_count=property_count
     )
 
+# Demo Mode - Create demo account with seed data
+@api_router.post("/auth/demo", response_model=AuthResponse)
+async def create_demo_account():
+    """Create a demo account with realistic sample data for UK short-let properties."""
+    import random
+    
+    # Generate unique demo user
+    demo_id = str(uuid.uuid4())
+    demo_email = f"demo_{demo_id[:8]}@staylet-demo.com"
+    now = datetime.now(timezone.utc)
+    trial_end = now + timedelta(days=TRIAL_DAYS)
+    
+    # Create demo user with Portfolio plan for full features
+    user_doc = {
+        "id": demo_id,
+        "email": demo_email,
+        "password": hash_password("demo123"),
+        "full_name": "Demo User",
+        "subscription_plan": "portfolio",
+        "subscription_status": "trial",
+        "trial_start": now.isoformat(),
+        "trial_end": trial_end.isoformat(),
+        "is_demo": True,
+        "onboarding_completed": True,
+        "created_at": now.isoformat(),
+        "updated_at": now.isoformat()
+    }
+    await db.users.insert_one(user_doc)
+    
+    # Create 3 realistic UK properties
+    properties_data = [
+        {
+            "name": "Victoria Terrace Apartment",
+            "address": "42 Victoria Terrace",
+            "postcode": "SW1V 1AA",
+            "uk_nation": "England",
+            "is_in_london": True,
+            "property_type": "apartment",
+            "ownership_type": "owned",
+            "bedrooms": 2
+        },
+        {
+            "name": "Cotswold Cottage",
+            "address": "Rose Cottage, High Street",
+            "postcode": "GL54 2HN",
+            "uk_nation": "England",
+            "is_in_london": False,
+            "property_type": "house",
+            "ownership_type": "owned",
+            "bedrooms": 3
+        },
+        {
+            "name": "Edinburgh Old Town Flat",
+            "address": "15 Royal Mile Close",
+            "postcode": "EH1 1QS",
+            "uk_nation": "Scotland",
+            "is_in_london": False,
+            "property_type": "apartment",
+            "ownership_type": "owned",
+            "bedrooms": 1
+        }
+    ]
+    
+    property_ids = []
+    for prop_data in properties_data:
+        prop_id = str(uuid.uuid4())
+        property_ids.append(prop_id)
+        prop_doc = {
+            "id": prop_id,
+            "user_id": demo_id,
+            **prop_data,
+            "property_status": "active",
+            "created_at": now.isoformat(),
+            "updated_at": now.isoformat()
+        }
+        await db.properties.insert_one(prop_doc)
+    
+    # Create compliance records with varied statuses
+    compliance_data = [
+        # Property 1 - Victoria Terrace (mixed status)
+        {"property_id": property_ids[0], "title": "Gas Safety Certificate", "category": "gas_safety", 
+         "expiry_date": (now + timedelta(days=45)).date().isoformat(), "status": "expiring_soon",
+         "notes": "Annual inspection by British Gas engineer"},
+        {"property_id": property_ids[0], "title": "EICR Certificate", "category": "eicr", 
+         "expiry_date": (now + timedelta(days=400)).date().isoformat(), "status": "compliant",
+         "notes": "5-year electrical inspection completed"},
+        {"property_id": property_ids[0], "title": "EPC Rating", "category": "epc", 
+         "expiry_date": (now + timedelta(days=1200)).date().isoformat(), "status": "compliant",
+         "notes": "Rating: C (72)"},
+        {"property_id": property_ids[0], "title": "Landlord Insurance", "category": "insurance", 
+         "expiry_date": (now - timedelta(days=5)).date().isoformat(), "status": "overdue",
+         "notes": "Buildings and contents with Aviva - RENEWAL NEEDED"},
+        
+        # Property 2 - Cotswold Cottage (mostly compliant)
+        {"property_id": property_ids[1], "title": "Gas Safety Certificate", "category": "gas_safety", 
+         "expiry_date": (now + timedelta(days=200)).date().isoformat(), "status": "compliant",
+         "notes": "Local Gas Safe engineer - expires August"},
+        {"property_id": property_ids[1], "title": "EICR Certificate", "category": "eicr", 
+         "expiry_date": (now + timedelta(days=25)).date().isoformat(), "status": "expiring_soon",
+         "notes": "Due for renewal next month"},
+        {"property_id": property_ids[1], "title": "Fire Risk Assessment", "category": "fire_risk_assessment", 
+         "expiry_date": (now + timedelta(days=90)).date().isoformat(), "status": "compliant",
+         "notes": "Smoke alarms and fire extinguisher checked"},
+        {"property_id": property_ids[1], "title": "EPC Rating", "category": "epc", 
+         "expiry_date": (now + timedelta(days=2500)).date().isoformat(), "status": "compliant",
+         "notes": "Rating: B (85) - recently upgraded insulation"},
+        
+        # Property 3 - Edinburgh (Scotland-specific)
+        {"property_id": property_ids[2], "title": "Gas Safety Certificate", "category": "gas_safety", 
+         "expiry_date": (now + timedelta(days=15)).date().isoformat(), "status": "expiring_soon",
+         "notes": "Booked with Scottish Gas for next week"},
+        {"property_id": property_ids[2], "title": "Short-Term Let Licence", "category": "licence", 
+         "expiry_date": (now + timedelta(days=300)).date().isoformat(), "status": "compliant",
+         "notes": "Edinburgh Council licence - 3 year term"},
+        {"property_id": property_ids[2], "title": "EICR Certificate", "category": "eicr", 
+         "expiry_date": (now - timedelta(days=30)).date().isoformat(), "status": "overdue",
+         "notes": "URGENT: Electrical inspection overdue"},
+        {"property_id": property_ids[2], "title": "Legionella Risk Assessment", "category": "legionella", 
+         "expiry_date": (now + timedelta(days=180)).date().isoformat(), "status": "compliant",
+         "notes": "Water system checked - low risk"}
+    ]
+    
+    for comp_data in compliance_data:
+        comp_id = str(uuid.uuid4())
+        expiry = datetime.fromisoformat(comp_data["expiry_date"])
+        days_until = (expiry.date() - now.date()).days
+        
+        if days_until < 0:
+            calc_status = "overdue"
+        elif days_until <= 30:
+            calc_status = "expiring_soon"
+        else:
+            calc_status = "compliant"
+        
+        comp_doc = {
+            "id": comp_id,
+            "user_id": demo_id,
+            "property_id": comp_data["property_id"],
+            "title": comp_data["title"],
+            "category": comp_data["category"],
+            "expiry_date": comp_data["expiry_date"],
+            "compliance_status": calc_status,
+            "notes": comp_data.get("notes", ""),
+            "reminder_preference": "30_days",
+            "created_at": now.isoformat(),
+            "updated_at": now.isoformat()
+        }
+        await db.compliance_records.insert_one(comp_doc)
+    
+    # Create tasks with varied priorities and due dates
+    tasks_data = [
+        {"property_id": property_ids[0], "title": "Renew landlord insurance", 
+         "description": "Get quotes from Aviva, Direct Line, and Hiscox", 
+         "due_date": (now + timedelta(days=2)).date().isoformat(), "priority": "high", "task_status": "pending", "category": "renewal"},
+        {"property_id": property_ids[0], "title": "Replace smoke alarm batteries", 
+         "description": "Check all units before next guest arrival", 
+         "due_date": (now + timedelta(days=7)).date().isoformat(), "priority": "medium", "task_status": "pending", "category": "safety"},
+        {"property_id": property_ids[1], "title": "Book EICR inspection", 
+         "description": "Contact local electrician for 5-year check", 
+         "due_date": (now + timedelta(days=5)).date().isoformat(), "priority": "high", "task_status": "pending", "category": "inspection"},
+        {"property_id": property_ids[1], "title": "Schedule boiler service", 
+         "description": "Annual service - check heating efficiency", 
+         "due_date": (now + timedelta(days=14)).date().isoformat(), "priority": "medium", "task_status": "pending", "category": "maintenance"},
+        {"property_id": property_ids[2], "title": "Urgent: Book EICR inspection", 
+         "description": "Certificate expired - arrange immediately", 
+         "due_date": now.date().isoformat(), "priority": "high", "task_status": "pending", "category": "inspection"},
+        {"property_id": property_ids[2], "title": "Confirm gas safety appointment", 
+         "description": "Scottish Gas visit scheduled for next week", 
+         "due_date": (now + timedelta(days=3)).date().isoformat(), "priority": "medium", "task_status": "in_progress", "category": "inspection"}
+    ]
+    
+    for task_data in tasks_data:
+        task_id = str(uuid.uuid4())
+        task_doc = {
+            "id": task_id,
+            "user_id": demo_id,
+            **task_data,
+            "is_recurring": False,
+            "created_at": now.isoformat(),
+            "updated_at": now.isoformat()
+        }
+        await db.tasks.insert_one(task_doc)
+    
+    # Update property compliance summaries
+    for prop_id in property_ids:
+        records = await db.compliance_records.find({"property_id": prop_id}).to_list(100)
+        summary = {"total": 0, "compliant": 0, "expiring_soon": 0, "overdue": 0, "missing": 0}
+        for record in records:
+            summary["total"] += 1
+            status = record.get("compliance_status", "compliant")
+            if status in summary:
+                summary[status] += 1
+        await db.properties.update_one({"id": prop_id}, {"$set": {"compliance_summary": summary}})
+    
+    # Create auth token
+    token = create_token(demo_id, demo_email)
+    plan_info = SUBSCRIPTION_PLANS.get("portfolio", {})
+    
+    return AuthResponse(
+        user=UserResponse(
+            id=demo_id,
+            email=demo_email,
+            full_name="Demo User",
+            created_at=now.isoformat(),
+            subscription_plan="portfolio",
+            subscription_status="trial",
+            trial_start=now.isoformat(),
+            trial_end=trial_end.isoformat(),
+            property_limit=plan_info.get("property_limit", 5),
+            property_count=3
+        ),
+        token=token
+    )
+
+# User Onboarding Status
+class OnboardingStatus(BaseModel):
+    completed: bool
+    current_step: int
+    steps_completed: List[str]
+
+@api_router.get("/user/onboarding", response_model=OnboardingStatus)
+async def get_onboarding_status(current_user: dict = Depends(get_current_user)):
+    """Get user's onboarding progress."""
+    user_id = current_user["id"]
+    
+    # Check what the user has done
+    has_property = await db.properties.count_documents({"user_id": user_id, "property_status": "active"}) > 0
+    has_compliance = await db.compliance_records.count_documents({"user_id": user_id}) > 0
+    has_viewed_dashboard = current_user.get("has_viewed_dashboard", False)
+    
+    steps_completed = []
+    if has_property:
+        steps_completed.append("add_property")
+    if has_compliance:
+        steps_completed.append("add_compliance")
+    if has_viewed_dashboard:
+        steps_completed.append("view_dashboard")
+    
+    # Determine current step
+    current_step = 0
+    if not has_property:
+        current_step = 1
+    elif not has_compliance:
+        current_step = 2
+    elif not has_viewed_dashboard:
+        current_step = 3
+    else:
+        current_step = 4  # Complete
+    
+    completed = current_user.get("onboarding_completed", False) or len(steps_completed) >= 3
+    
+    return OnboardingStatus(
+        completed=completed,
+        current_step=current_step,
+        steps_completed=steps_completed
+    )
+
+@api_router.post("/user/onboarding/complete")
+async def complete_onboarding(current_user: dict = Depends(get_current_user)):
+    """Mark onboarding as complete."""
+    await db.users.update_one(
+        {"id": current_user["id"]},
+        {"$set": {"onboarding_completed": True, "has_viewed_dashboard": True}}
+    )
+    return {"success": True}
+
 # Dashboard Routes
 @api_router.get("/dashboard/stats", response_model=DashboardStats)
 async def get_dashboard_stats(current_user: dict = Depends(get_current_user)):
@@ -1271,10 +1537,8 @@ async def create_checkout_session(
     # Get amount based on billing cycle (amounts must be floats for Stripe)
     if billing_cycle == "annual":
         amount = float(plan_info["price_yearly"])
-        description = f"{plan_info['name']} Plan - Annual"
     else:
         amount = float(plan_info["price_monthly"])
-        description = f"{plan_info['name']} Plan - Monthly"
     
     # Build success and cancel URLs from frontend origin
     origin_url = checkout_request.origin_url.rstrip('/')

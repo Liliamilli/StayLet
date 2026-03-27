@@ -252,15 +252,15 @@ export default function PropertiesPage() {
             )}
 
             {properties.length === 0 ? (
-                <div className="bg-white rounded-lg border border-slate-200">
-                    <EmptyState
-                        icon={Building2}
-                        title="No properties yet"
-                        description="Add your first property to start tracking compliance documents, certificates, and deadlines."
-                        actionLabel="Add Property"
-                        onAction={handleCreateProperty}
-                    />
-                </div>
+                <EmptyState
+                    icon={Building2}
+                    title="Add your first property"
+                    description="Start by adding a property you manage. We'll help you track gas certs, EICRs, insurance, and all compliance documents in one place."
+                    actionLabel="Add Property"
+                    onAction={handleCreateProperty}
+                    tip="You can add properties in any UK nation - we'll track the specific requirements for England, Scotland, Wales, or Northern Ireland."
+                    variant="featured"
+                />
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {properties.map((property) => (

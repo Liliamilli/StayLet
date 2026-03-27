@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
 import { Button } from '../components/ui/button';
 import { 
     Shield, 
@@ -23,7 +24,8 @@ import {
     Star,
     FileCheck,
     ClipboardList,
-    Sparkles
+    Sparkles,
+    Loader2
 } from 'lucide-react';
 
 // Problem points that resonate with hosts
@@ -261,9 +263,24 @@ const trustSignals = [
 
 export default function LandingPage() {
     const navigate = useNavigate();
+    const { startDemo } = useAuth();
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [openFaq, setOpenFaq] = useState(null);
     const [isAnnual, setIsAnnual] = useState(false);
+    const [demoLoading, setDemoLoading] = useState(false);
+
+    const handleStartDemo = async () => {
+        setDemoLoading(true);
+        try {
+            await startDemo();
+            navigate('/app');
+        } catch (error) {
+            console.error('Failed to start demo:', error);
+            alert('Failed to start demo. Please try again.');
+        } finally {
+            setDemoLoading(false);
+        }
+    };
 
     return (
         <div className="min-h-screen bg-white">
@@ -403,11 +420,16 @@ export default function LandingPage() {
                                 size="lg"
                                 variant="outline"
                                 className="w-full sm:w-auto px-8 py-6 text-base font-medium border-2"
-                                onClick={() => navigate('/signup')}
+                                onClick={handleStartDemo}
+                                disabled={demoLoading}
                                 data-testid="hero-cta-demo"
                             >
-                                <Sparkles className="w-5 h-5 mr-2 text-blue-600" />
-                                Try Demo Mode
+                                {demoLoading ? (
+                                    <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                                ) : (
+                                    <Sparkles className="w-5 h-5 mr-2 text-blue-600" />
+                                )}
+                                {demoLoading ? 'Loading Demo...' : 'Try Demo Mode'}
                             </Button>
                         </div>
 
@@ -876,9 +898,10 @@ export default function LandingPage() {
                             size="lg"
                             variant="outline"
                             className="w-full sm:w-auto px-8 py-6 text-base font-medium border-slate-600 text-white hover:bg-slate-800"
-                            onClick={() => navigate('/signup')}
+                            onClick={handleStartDemo}
+                            disabled={demoLoading}
                         >
-                            Try Demo Mode
+                            {demoLoading ? 'Loading...' : 'Try Demo Mode'}
                         </Button>
                     </div>
 

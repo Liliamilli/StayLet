@@ -1,0 +1,103 @@
+{
+  "summary": "Tested demo mode, onboarding wizard, and empty states. Fixed 3 backend bugs in demo endpoint (reminder_preference, task_status/category, is_in_london field names). All features now working correctly.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [],
+    "fixed_by_testing_agent": [
+      {
+        "endpoint": "/api/auth/demo",
+        "issue": "Demo compliance records used 'reminder_days' instead of 'reminder_preference'",
+        "fix": "Changed to 'reminder_preference': '30_days'"
+      },
+      {
+        "endpoint": "/api/auth/demo",
+        "issue": "Demo tasks used 'status' instead of 'task_status' and missing 'category' field",
+        "fix": "Changed to 'task_status' and added 'category' field"
+      },
+      {
+        "endpoint": "/api/auth/demo",
+        "issue": "Demo properties used 'is_london' instead of 'is_in_london'",
+        "fix": "Changed to 'is_in_london'"
+      }
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "passed_tests": [
+    "Demo mode button on landing page ('Try Demo Mode')",
+    "Demo mode creates account and redirects to dashboard",
+    "Demo banner shows 'You're exploring Demo Mode' with purple gradient",
+    "Demo banner has 'Start Free Trial' button",
+    "Dashboard shows 3 properties, 2 expiring soon, 2 overdue, 6 tasks",
+    "Onboarding wizard appears after signup for new users",
+    "Onboarding wizard shows 3 steps with progress bar (0 of 3 complete)",
+    "Onboarding wizard skip button (X) closes wizard",
+    "Onboarding wizard 'Skip for now' link works",
+    "Empty state dashboard shows 'Welcome to Staylet!' with featured styling",
+    "Empty state dashboard has tip about 15 minutes setup",
+    "Empty state properties shows 'Add your first property' with featured styling",
+    "Empty state properties has tip about UK nations (England, Scotland, Wales, Northern Ireland)",
+    "Seed data: Victoria Terrace Apartment (England, SW1V 1AA)",
+    "Seed data: Cotswold Cottage (England, GL54 2HN)",
+    "Seed data: Edinburgh Old Town Flat (Scotland, EH1 1QS)",
+    "Seed data: Mixed compliance statuses (compliant, expiring_soon, overdue)",
+    "Seed data: Gas Safety, EICR, EPC, Insurance records",
+    "Seed data: 6 tasks with varied priorities and due dates"
+  ],
+  "test_report_links": [
+    "/app/backend/server.py"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [],
+  "updated_files": [
+    "/app/backend/server.py - Fixed demo endpoint field names"
+  ],
+  "success_rate": {
+    "backend": "100%",
+    "frontend": "100%"
+  },
+  "test_credentials": {
+    "demo_mode": "No credentials needed - creates temporary account automatically"
+  },
+  "seed_data_creation": "Demo mode creates 3 UK properties, 12 compliance records, 6 tasks",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Demo mode, onboarding wizard, and empty states all working. Demo creates realistic UK property data with mixed compliance statuses. Onboarding wizard shows for new signups but not for demo users (onboarding_completed=True for demo).",
+  "verified_features": {
+    "demo_mode_button": {
+      "status": "Working",
+      "details": "Landing page hero has 'Try Demo Mode' button that creates demo account"
+    },
+    "demo_banner": {
+      "status": "Working",
+      "details": "Purple gradient banner shows 'You're exploring Demo Mode' with 'Start Free Trial' button"
+    },
+    "onboarding_wizard": {
+      "status": "Working",
+      "details": "3-step wizard appears after signup, shows progress bar, skip functionality works"
+    },
+    "empty_state_dashboard": {
+      "status": "Working",
+      "details": "Featured variant with 'Welcome to Staylet!' and tip about 15 minutes setup"
+    },
+    "empty_state_properties": {
+      "status": "Working",
+      "details": "Featured variant with 'Add your first property' and tip about UK nations"
+    },
+    "seed_data_properties": {
+      "status": "Working",
+      "details": "3 realistic UK properties: Victoria Terrace, Cotswold Cottage, Edinburgh Old Town"
+    },
+    "seed_data_compliance": {
+      "status": "Working",
+      "details": "12 records with mixed statuses: 2 overdue, 2 expiring soon, 8 compliant"
+    },
+    "seed_data_tasks": {
+      "status": "Working",
+      "details": "6 tasks with varied priorities and due dates"
+    }
+  }
+}

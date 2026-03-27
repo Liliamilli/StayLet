@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../contexts/AuthContext';
 import DashboardCard from '../components/shared/DashboardCard';
+import OnboardingWizard from '../components/onboarding/OnboardingWizard';
+import EmptyState from '../components/shared/EmptyState';
 import { 
     Building2, 
     Clock, 
@@ -16,7 +18,9 @@ import {
     CheckCircle2,
     AlertTriangle,
     Sparkles,
-    Crown
+    Crown,
+    Rocket,
+    Eye
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 
@@ -43,9 +47,10 @@ const categoryLabels = {
 
 export default function DashboardPage() {
     const navigate = useNavigate();
-    const { subscription } = useAuth();
+    const { subscription, isDemo, onboardingStatus, refreshOnboarding, completeOnboarding } = useAuth();
     const [dashboardData, setDashboardData] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [showOnboarding, setShowOnboarding] = useState(false);
 
     useEffect(() => {
         const fetchDashboard = async () => {
@@ -70,6 +75,18 @@ export default function DashboardPage() {
 
         fetchDashboard();
     }, []);
+
+    // Show onboarding for new users
+    useEffect(() => {
+        if (!loading && onboardingStatus && !onboardingStatus.completed && !isDemo) {
+            setShowOnboarding(true);
+        }
+    }, [loading, onboardingStatus, isDemo]);
+
+    const handleOnboardingComplete = () => {
+        setShowOnboarding(false);
+        completeOnboarding();
+    };
 
     const formatDate = (dateStr) => {
         if (!dateStr) return '—';
@@ -106,8 +123,43 @@ export default function DashboardPage() {
 
     return (
         <div data-testid="dashboard-page">
+            {/* Onboarding Wizard */}
+            {showOnboarding && (
+                <OnboardingWizard 
+                    onComplete={handleOnboardingComplete}
+                    onDismiss={() => setShowOnboarding(false)}
+                />
+            )}
+
+            {/* Demo Mode Banner */}
+            {isDemo && (
+                <div className="mb-6 p-4 bg-gradient-to-r from-purple-600 to-pink-600 rounded-xl text-white">
+                    <div className="flex items-center justify-between flex-wrap gap-4">
+                        <div className="flex items-center gap-3">
+                            <div className="p-2 bg-white/20 rounded-lg">
+                                <Eye className="w-5 h-5" />
+                            </div>
+                            <div>
+                                <p className="font-semibold">You're exploring Demo Mode</p>
+                                <p className="text-sm text-purple-100">
+                                    This is sample data. Sign up to create your own account with real properties.
+                                </p>
+                            </div>
+                        </div>
+                        <Button 
+                            onClick={() => navigate('/signup')}
+                            className="bg-white text-purple-600 hover:bg-purple-50"
+                            size="sm"
+                        >
+                            <Rocket className="w-4 h-4 mr-2" />
+                            Start Free Trial
+                        </Button>
+                    </div>
+                </div>
+            )}
+
             {/* Trial Banner */}
-            {isTrialActive && (
+            {isTrialActive && !isDemo && (
                 <div className="mb-6 p-4 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl text-white">
                     <div className="flex items-center justify-between flex-wrap gap-4">
                         <div className="flex items-center gap-3">
@@ -211,27 +263,15 @@ export default function DashboardPage() {
 
             {/* Main content area */}
             {!hasProperties ? (
-                <div className="bg-white rounded-lg border border-slate-200 p-8">
-                    <div className="flex flex-col items-center justify-center py-8 text-center">
-                        <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mb-6">
-                            <Building2 className="w-8 h-8 text-blue-600" />
-                        </div>
-                        <h3 className="text-lg font-semibold text-slate-900 mb-2" style={{ fontFamily: 'Outfit, sans-serif' }}>
-                            Welcome to Staylet!
-                        </h3>
-                        <p className="text-sm text-slate-500 max-w-sm mb-6">
-                            Get started by adding your first property. We'll help you track all compliance documents and deadlines.
-                        </p>
-                        <Button 
-                            onClick={() => navigate('/app/properties')}
-                            className="bg-blue-600 hover:bg-blue-700 text-white"
-                            data-testid="add-first-property-btn"
-                        >
-                            <Plus className="w-4 h-4 mr-2" />
-                            Add Your First Property
-                        </Button>
-                    </div>
-                </div>
+                <EmptyState
+                    icon={Building2}
+                    title="Welcome to Staylet!"
+                    description="Get started by adding your first property. We'll help you track all compliance documents, set up automatic reminders, and keep you audit-ready."
+                    actionLabel="Add Your First Property"
+                    onAction={() => navigate('/app/properties')}
+                    tip="Most hosts add their first property and upload existing certificates in under 15 minutes."
+                    variant="featured"
+                />
             ) : (
                 <div className="space-y-6">
                     {/* Overdue Alert Section - Most prominent if there are overdue items */}

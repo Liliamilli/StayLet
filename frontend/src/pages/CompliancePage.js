@@ -149,15 +149,15 @@ export default function CompliancePage() {
             </div>
 
             {records.length === 0 ? (
-                <div className="bg-white rounded-lg border border-slate-200">
-                    <EmptyState
-                        icon={ClipboardCheck}
-                        title="No compliance records yet"
-                        description="Add a property first, then upload your compliance documents like gas certificates, EPC ratings, and EICR reports."
-                        actionLabel="Go to Properties"
-                        onAction={() => navigate('/app/properties')}
-                    />
-                </div>
+                <EmptyState
+                    icon={ClipboardCheck}
+                    title="All your certificates in one place"
+                    description="Start by adding a property, then upload your compliance documents—gas certs, EICRs, EPCs, and more. We'll track expiry dates and remind you before anything lapses."
+                    actionLabel="Add a Property First"
+                    onAction={() => navigate('/app/properties')}
+                    tip="Our smart document extraction can read certificate PDFs and fill in the details automatically."
+                    variant="featured"
+                />
             ) : (
                 <>
                     {/* Filters */}

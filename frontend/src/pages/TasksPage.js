@@ -375,17 +375,19 @@ export default function TasksPage() {
             )}
 
             {tasks.length === 0 ? (
-                <div className="bg-white rounded-lg border border-slate-200">
+                <div className="space-y-6">
                     <EmptyState
                         icon={ListTodo}
-                        title="No tasks yet"
-                        description="Create tasks to track maintenance, inspections, and other property-related activities."
+                        title="Keep track of what needs doing"
+                        description="Create tasks for inspections, renewals, maintenance, and anything else your properties need. Set due dates and priorities to stay organised."
                         actionLabel="Create Task"
                         onAction={handleCreateTask}
+                        tip="Pro tip: Use recurring tasks for annual inspections like boiler services."
+                        variant="featured"
                     />
                     
                     {/* Quick templates */}
-                    <div className="border-t border-slate-200 p-6">
+                    <div className="bg-white rounded-xl border border-slate-200 p-6">
                         <h3 className="text-sm font-medium text-slate-900 mb-3 flex items-center gap-2">
                             <Zap className="w-4 h-4 text-blue-600" />
                             Quick Add from Templates
