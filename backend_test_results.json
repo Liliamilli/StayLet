@@ -1,0 +1,89 @@
+{
+  "summary": {
+    "tests_run": 16,
+    "tests_passed": 14,
+    "success_rate": 87.5
+  },
+  "results": [
+    {
+      "test": "API Root",
+      "success": true,
+      "details": ""
+    },
+    {
+      "test": "Health Check",
+      "success": true,
+      "details": ""
+    },
+    {
+      "test": "User Signup",
+      "success": true,
+      "details": ""
+    },
+    {
+      "test": "Get Current User",
+      "success": true,
+      "details": ""
+    },
+    {
+      "test": "Password Reset Request",
+      "success": true,
+      "details": ""
+    },
+    {
+      "test": "Dashboard Stats",
+      "success": true,
+      "details": ""
+    },
+    {
+      "test": "Dashboard Stats Structure",
+      "success": true,
+      "details": ""
+    },
+    {
+      "test": "Get Properties (Empty)",
+      "success": true,
+      "details": ""
+    },
+    {
+      "test": "Create Property",
+      "success": true,
+      "details": ""
+    },
+    {
+      "test": "Get Properties (With Data)",
+      "success": true,
+      "details": ""
+    },
+    {
+      "test": "Get Tasks (Empty)",
+      "success": true,
+      "details": ""
+    },
+    {
+      "test": "Create Task",
+      "success": true,
+      "details": ""
+    },
+    {
+      "test": "Get Tasks (With Data)",
+      "success": true,
+      "details": ""
+    },
+    {
+      "test": "Get Notifications",
+      "success": true,
+      "details": ""
+    },
+    {
+      "test": "Dashboard Stats (Unauthorized)",
+      "success": false,
+      "details": "Expected 401, got 403 - {'detail': 'Not authenticated'}"
+    },
+    {
+      "test": "Get Properties (Unauthorized)",
+      "success": false,
+      "details": "Expected 401, got 403 - {'detail': 'Not authenticated'}"
+    }
+  ]
+}

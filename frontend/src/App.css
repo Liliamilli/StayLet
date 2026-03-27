@@ -1,34 +1,116 @@
-.App-logo {
-    height: 40vmin;
-    pointer-events: none;
+/* Staylet App Styles */
+
+/* Sidebar active state */
+.sidebar-link {
+    @apply flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-colors;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-    .App-logo {
-        animation: App-logo-spin infinite 20s linear;
-    }
+.sidebar-link.active {
+    @apply bg-blue-50 text-blue-700;
 }
 
-.App-header {
-    background-color: #0f0f10;
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    font-size: calc(10px + 2vmin);
-    color: white;
+/* Dashboard card hover effect */
+.dashboard-card {
+    @apply transition-all duration-200 ease-in-out;
 }
 
-.App-link {
-    color: #61dafb;
+.dashboard-card:hover {
+    @apply shadow-md border-slate-300;
 }
 
-@keyframes App-logo-spin {
-    from {
-        transform: rotate(0deg);
-    }
-    to {
-        transform: rotate(360deg);
-    }
+/* Form focus states */
+.form-input:focus-within {
+    @apply ring-2 ring-blue-500 ring-offset-1;
+}
+
+/* Loading spinner */
+.spinner {
+    @apply animate-spin rounded-full border-2 border-slate-200 border-t-blue-600;
+}
+
+/* Pricing card highlight */
+.pricing-card-popular {
+    @apply ring-2 ring-blue-600 shadow-lg;
+}
+
+/* Empty state illustration */
+.empty-state-icon {
+    @apply w-16 h-16 mx-auto mb-4 text-slate-300;
+}
+
+/* Navigation dropdown */
+.nav-dropdown {
+    @apply absolute right-0 mt-2 w-48 rounded-lg bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none;
+}
+
+/* Mobile menu overlay */
+.mobile-menu-overlay {
+    @apply fixed inset-0 bg-black/50 backdrop-blur-sm z-40;
+}
+
+/* Status indicators */
+.status-dot {
+    @apply w-2 h-2 rounded-full;
+}
+
+.status-dot-success {
+    @apply bg-emerald-500;
+}
+
+.status-dot-warning {
+    @apply bg-amber-500;
+}
+
+.status-dot-error {
+    @apply bg-red-500;
+}
+
+.status-dot-neutral {
+    @apply bg-slate-400;
+}
+
+/* FAQ accordion */
+.faq-item {
+    @apply border-b border-slate-200 last:border-0;
+}
+
+.faq-trigger {
+    @apply flex w-full items-center justify-between py-4 text-left font-medium text-slate-900 hover:text-blue-600 transition-colors;
+}
+
+.faq-content {
+    @apply pb-4 text-slate-600;
+}
+
+/* Hero pattern */
+.hero-pattern {
+    background-image: radial-gradient(circle at 1px 1px, rgba(0, 0, 0, 0.03) 1px, transparent 0);
+    background-size: 24px 24px;
+}
+
+/* Gradient backgrounds */
+.gradient-subtle {
+    background: linear-gradient(180deg, #F8FAFC 0%, #FFFFFF 100%);
+}
+
+/* Table styles */
+.table-header {
+    @apply bg-slate-50 text-left text-xs font-semibold uppercase tracking-wider text-slate-500;
+}
+
+.table-row {
+    @apply border-b border-slate-100 hover:bg-slate-50 transition-colors;
+}
+
+/* Toast customization */
+.toast-success {
+    @apply bg-emerald-50 border-emerald-200 text-emerald-800;
+}
+
+.toast-error {
+    @apply bg-red-50 border-red-200 text-red-800;
+}
+
+.toast-warning {
+    @apply bg-amber-50 border-amber-200 text-amber-800;
 }
