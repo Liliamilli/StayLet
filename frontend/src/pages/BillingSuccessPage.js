@@ -29,7 +29,7 @@ export default function BillingSuccessPage() {
         }
     }, [searchParams]);
 
-    const checkPaymentStatus = async (sessionId) => {
+    const checkPaymentStatus = async (sessionId, attemptCount = 0) => {
         try {
             const response = await axios.get(`${API_URL}/api/payments/status/${sessionId}`);
             const data = response.data;
@@ -46,11 +46,11 @@ export default function BillingSuccessPage() {
             } else if (data.status === 'expired') {
                 setStatus('error');
                 setMessage('Payment session expired. Please try again.');
-            } else if (attempts < maxAttempts) {
+            } else if (attemptCount < maxAttempts) {
                 // Keep polling
+                setAttempts(attemptCount + 1);
                 setTimeout(() => {
-                    setAttempts(prev => prev + 1);
-                    checkPaymentStatus(sessionId);
+                    checkPaymentStatus(sessionId, attemptCount + 1);
                 }, pollInterval);
             } else {
                 setStatus('error');
@@ -58,10 +58,17 @@ export default function BillingSuccessPage() {
             }
         } catch (error) {
             console.error('Payment status check error:', error);
-            if (attempts < maxAttempts) {
+            // If session not found (404), show error immediately
+            if (error.response?.status === 404) {
+                setStatus('error');
+                setMessage('Payment session not found. Please try again or contact support.');
+                return;
+            }
+            // For other errors, keep polling up to max attempts
+            if (attemptCount < maxAttempts) {
+                setAttempts(attemptCount + 1);
                 setTimeout(() => {
-                    setAttempts(prev => prev + 1);
-                    checkPaymentStatus(sessionId);
+                    checkPaymentStatus(sessionId, attemptCount + 1);
                 }, pollInterval);
             } else {
                 setStatus('error');
