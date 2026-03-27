@@ -40,52 +40,58 @@ const benefits = [
 
 const pricingPlans = [
     {
-        name: 'Starter',
-        price: '£9',
+        name: 'Solo',
+        price: '£19',
         period: '/month',
-        description: 'Perfect for hosts with 1-2 properties',
+        yearlyPrice: '£190/year',
+        description: 'Perfect for single property hosts',
         features: [
-            'Up to 2 properties',
-            'All compliance tracking',
+            '1 property',
+            'Full compliance tracking',
+            'Document storage',
             'Email reminders',
-            'Document storage (1GB)',
-            'Basic support'
+            'Task management',
+            'Mobile access'
         ],
         cta: 'Start Free Trial',
-        popular: false
+        popular: false,
+        icon: Building2
     },
     {
-        name: 'Professional',
-        price: '£29',
+        name: 'Portfolio',
+        price: '£39',
         period: '/month',
-        description: 'For growing portfolios',
+        yearlyPrice: '£390/year',
+        description: 'For hosts with multiple properties',
         features: [
-            'Up to 10 properties',
-            'Everything in Starter',
-            'Priority reminders',
-            'Document storage (10GB)',
+            'Up to 5 properties',
+            'Everything in Solo',
             'Priority support',
-            'Compliance reports'
+            'Bulk compliance setup',
+            'Advanced reports',
+            'Smart document extraction'
         ],
         cta: 'Start Free Trial',
-        popular: true
+        popular: true,
+        icon: Shield
     },
     {
-        name: 'Business',
+        name: 'Operator',
         price: '£79',
         period: '/month',
-        description: 'For property managers',
+        yearlyPrice: '£790/year',
+        description: 'For professional property managers',
         features: [
-            'Unlimited properties',
-            'Everything in Professional',
-            'Team access',
-            'Document storage (50GB)',
-            'Dedicated support',
+            'Up to 15 properties',
+            'Everything in Portfolio',
             'API access',
-            'Custom branding'
+            'Team members (coming soon)',
+            'Custom integrations',
+            'Dedicated support'
         ],
-        cta: 'Contact Sales',
-        popular: false
+        cta: 'Start Free Trial',
+        popular: false,
+        icon: Clock
     }
 ];
 
@@ -298,6 +304,9 @@ export default function LandingPage() {
             <section id="pricing" className="py-20 md:py-28">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="text-center mb-16">
+                        <span className="inline-block px-4 py-1.5 bg-blue-100 text-blue-700 rounded-full text-sm font-medium mb-4">
+                            Pricing
+                        </span>
                         <h2 
                             className="text-3xl sm:text-4xl font-bold text-slate-900 mb-4"
                             style={{ fontFamily: 'Outfit, sans-serif' }}
@@ -305,64 +314,83 @@ export default function LandingPage() {
                             Simple, transparent pricing
                         </h2>
                         <p className="text-lg text-slate-600 max-w-2xl mx-auto">
-                            Start free, upgrade when you're ready. No hidden fees.
+                            14-day free trial on all plans. No credit card required.
                         </p>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-                        {pricingPlans.map((plan, index) => (
-                            <div 
-                                key={index}
-                                className={`
-                                    relative bg-white rounded-xl p-8 border
-                                    ${plan.popular 
-                                        ? 'border-blue-600 ring-2 ring-blue-600 shadow-lg' 
-                                        : 'border-slate-200 hover:border-slate-300'
-                                    }
-                                    transition-all
-                                `}
-                                data-testid={`pricing-${plan.name.toLowerCase()}`}
-                            >
-                                {plan.popular && (
-                                    <div className="absolute -top-4 left-1/2 -translate-x-1/2">
-                                        <span className="bg-blue-600 text-white text-xs font-semibold px-3 py-1 rounded-full">
-                                            Most Popular
-                                        </span>
-                                    </div>
-                                )}
-
-                                <h3 className="text-lg font-semibold text-slate-900 mb-2" style={{ fontFamily: 'Outfit, sans-serif' }}>
-                                    {plan.name}
-                                </h3>
-                                <p className="text-sm text-slate-500 mb-4">{plan.description}</p>
-                                
-                                <div className="mb-6">
-                                    <span className="text-4xl font-bold text-slate-900" style={{ fontFamily: 'Outfit, sans-serif' }}>
-                                        {plan.price}
-                                    </span>
-                                    <span className="text-slate-500">{plan.period}</span>
-                                </div>
-
-                                <ul className="space-y-3 mb-8">
-                                    {plan.features.map((feature, fIndex) => (
-                                        <li key={fIndex} className="flex items-start gap-3 text-sm text-slate-600">
-                                            <CheckCircle2 className="w-5 h-5 text-emerald-500 flex-shrink-0" />
-                                            {feature}
-                                        </li>
-                                    ))}
-                                </ul>
-
-                                <Button 
-                                    className={`w-full ${plan.popular ? 'bg-blue-600 hover:bg-blue-700 text-white' : ''}`}
-                                    variant={plan.popular ? 'default' : 'outline'}
-                                    onClick={() => navigate('/signup')}
-                                    data-testid={`pricing-cta-${plan.name.toLowerCase()}`}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
+                        {pricingPlans.map((plan, index) => {
+                            const Icon = plan.icon;
+                            return (
+                                <div 
+                                    key={index}
+                                    className={`
+                                        relative bg-white rounded-2xl p-8 border-2 transition-all
+                                        ${plan.popular 
+                                            ? 'border-blue-600 ring-4 ring-blue-100 shadow-xl scale-105 z-10' 
+                                            : 'border-slate-200 hover:border-blue-300 hover:shadow-lg'
+                                        }
+                                    `}
+                                    data-testid={`pricing-${plan.name.toLowerCase()}`}
                                 >
-                                    {plan.cta}
-                                </Button>
-                            </div>
-                        ))}
+                                    {plan.popular && (
+                                        <div className="absolute -top-4 left-1/2 -translate-x-1/2">
+                                            <span className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-xs font-semibold px-4 py-1.5 rounded-full shadow-lg">
+                                                Most Popular
+                                            </span>
+                                        </div>
+                                    )}
+
+                                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center mb-4 ${
+                                        plan.popular ? 'bg-blue-100' : 'bg-slate-100'
+                                    }`}>
+                                        <Icon className={`w-6 h-6 ${plan.popular ? 'text-blue-600' : 'text-slate-600'}`} />
+                                    </div>
+
+                                    <h3 className="text-xl font-bold text-slate-900 mb-1" style={{ fontFamily: 'Outfit, sans-serif' }}>
+                                        {plan.name}
+                                    </h3>
+                                    <p className="text-sm text-slate-500 mb-4">{plan.description}</p>
+                                    
+                                    <div className="mb-2">
+                                        <span className="text-4xl font-bold text-slate-900" style={{ fontFamily: 'Outfit, sans-serif' }}>
+                                            {plan.price}
+                                        </span>
+                                        <span className="text-slate-500">{plan.period}</span>
+                                    </div>
+                                    <p className="text-sm text-slate-400 mb-6">
+                                        or {plan.yearlyPrice} <span className="text-emerald-600">(save 17%)</span>
+                                    </p>
+
+                                    <ul className="space-y-3 mb-8">
+                                        {plan.features.map((feature, fIndex) => (
+                                            <li key={fIndex} className="flex items-start gap-3 text-sm text-slate-600">
+                                                <CheckCircle2 className={`w-5 h-5 flex-shrink-0 ${plan.popular ? 'text-blue-500' : 'text-emerald-500'}`} />
+                                                {feature}
+                                            </li>
+                                        ))}
+                                    </ul>
+
+                                    <Button 
+                                        className={`w-full h-12 font-semibold ${plan.popular 
+                                            ? 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg' 
+                                            : 'border-2 border-slate-200 hover:border-blue-300 hover:bg-blue-50'
+                                        }`}
+                                        variant={plan.popular ? 'default' : 'outline'}
+                                        onClick={() => navigate('/signup')}
+                                        data-testid={`pricing-cta-${plan.name.toLowerCase()}`}
+                                    >
+                                        {plan.cta}
+                                        {plan.popular && <ArrowRight className="w-4 h-4 ml-2" />}
+                                    </Button>
+                                </div>
+                            );
+                        })}
                     </div>
+
+                    <p className="text-center text-sm text-slate-500 mt-8">
+                        All plans include a 14-day free trial. Cancel anytime.
+                    </p>
                 </div>
             </section>
 

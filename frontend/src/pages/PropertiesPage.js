@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { useAuth } from '../contexts/AuthContext';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { 
@@ -16,6 +17,7 @@ import {
     Trash2
 } from 'lucide-react';
 import PropertyModal from '../components/properties/PropertyModal';
+import UpgradePlanModal from '../components/billing/UpgradePlanModal';
 import EmptyState from '../components/shared/EmptyState';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
@@ -109,11 +111,14 @@ function PropertyCard({ property, onEdit, onDelete, onClick }) {
 
 export default function PropertiesPage() {
     const navigate = useNavigate();
+    const { subscription, refreshSubscription } = useAuth();
     const [properties, setProperties] = useState([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState('');
     const [modalOpen, setModalOpen] = useState(false);
     const [editingProperty, setEditingProperty] = useState(null);
+    const [upgradeModalOpen, setUpgradeModalOpen] = useState(false);
+    const [limitMessage, setLimitMessage] = useState('');
 
     const fetchProperties = async (searchQuery = '') => {
         try {
@@ -138,7 +143,19 @@ export default function PropertiesPage() {
         return () => clearTimeout(timer);
     }, [search]);
 
-    const handleCreateProperty = () => {
+    const handleCreateProperty = async () => {
+        // Check plan limit before opening modal
+        try {
+            const response = await axios.get(`${API_URL}/api/subscription/check-limit`);
+            if (!response.data.allowed) {
+                setLimitMessage(response.data.message);
+                setUpgradeModalOpen(true);
+                return;
+            }
+        } catch (error) {
+            console.error('Failed to check limit:', error);
+        }
+        
         setEditingProperty(null);
         setModalOpen(true);
     };
@@ -155,6 +172,8 @@ export default function PropertiesPage() {
         try {
             await axios.delete(`${API_URL}/api/properties/${propertyId}`);
             setProperties(properties.filter(p => p.id !== propertyId));
+            // Refresh subscription to update property count
+            refreshSubscription();
         } catch (error) {
             console.error('Failed to delete property:', error);
         }
@@ -168,6 +187,8 @@ export default function PropertiesPage() {
             } else {
                 const response = await axios.post(`${API_URL}/api/properties`, propertyData);
                 setProperties([...properties, response.data]);
+                // Refresh subscription to update property count
+                refreshSubscription();
             }
             setModalOpen(false);
             setEditingProperty(null);
@@ -259,6 +280,14 @@ export default function PropertiesPage() {
                 onClose={() => { setModalOpen(false); setEditingProperty(null); }}
                 onSave={handleSaveProperty}
                 property={editingProperty}
+            />
+
+            <UpgradePlanModal
+                isOpen={upgradeModalOpen}
+                onClose={() => setUpgradeModalOpen(false)}
+                currentPlan={subscription?.plan || 'solo'}
+                propertyCount={subscription?.property_count || properties.length}
+                limitMessage={limitMessage}
             />
         </div>
     );

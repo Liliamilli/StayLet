@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { useAuth } from '../contexts/AuthContext';
 import DashboardCard from '../components/shared/DashboardCard';
 import { 
     Building2, 
@@ -13,7 +14,9 @@ import {
     Calendar,
     ChevronRight,
     CheckCircle2,
-    AlertTriangle
+    AlertTriangle,
+    Sparkles,
+    Crown
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 
@@ -40,6 +43,7 @@ const categoryLabels = {
 
 export default function DashboardPage() {
     const navigate = useNavigate();
+    const { subscription } = useAuth();
     const [dashboardData, setDashboardData] = useState(null);
     const [loading, setLoading] = useState(true);
 
@@ -97,8 +101,62 @@ export default function DashboardPage() {
     const overdueRecords = dashboardData?.overdue_records || [];
     const tasksDueThisMonth = dashboardData?.tasks_due_this_month || [];
 
+    const isTrialActive = subscription?.status === 'trial' && subscription?.trial_days_remaining > 0;
+    const isTrialExpired = subscription?.status === 'expired';
+
     return (
         <div data-testid="dashboard-page">
+            {/* Trial Banner */}
+            {isTrialActive && (
+                <div className="mb-6 p-4 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl text-white">
+                    <div className="flex items-center justify-between flex-wrap gap-4">
+                        <div className="flex items-center gap-3">
+                            <div className="p-2 bg-white/20 rounded-lg">
+                                <Sparkles className="w-5 h-5" />
+                            </div>
+                            <div>
+                                <p className="font-semibold">Free Trial - {subscription.trial_days_remaining} days remaining</p>
+                                <p className="text-sm text-blue-100">
+                                    You're on the {subscription.plan_name} plan • {subscription.property_count}/{subscription.property_limit} properties used
+                                </p>
+                            </div>
+                        </div>
+                        <Button 
+                            onClick={() => navigate('/app/billing')}
+                            className="bg-white text-blue-600 hover:bg-blue-50"
+                            size="sm"
+                        >
+                            <Crown className="w-4 h-4 mr-2" />
+                            Upgrade Now
+                        </Button>
+                    </div>
+                </div>
+            )}
+
+            {/* Trial Expired Banner */}
+            {isTrialExpired && (
+                <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-xl">
+                    <div className="flex items-center justify-between flex-wrap gap-4">
+                        <div className="flex items-center gap-3">
+                            <AlertTriangle className="w-5 h-5 text-amber-600" />
+                            <div>
+                                <p className="font-semibold text-amber-900">Your trial has expired</p>
+                                <p className="text-sm text-amber-700">
+                                    Subscribe to a plan to continue using Staylet.
+                                </p>
+                            </div>
+                        </div>
+                        <Button 
+                            onClick={() => navigate('/app/billing')}
+                            className="bg-amber-600 hover:bg-amber-700 text-white"
+                            size="sm"
+                        >
+                            Choose Plan
+                        </Button>
+                    </div>
+                </div>
+            )}
+
             {/* Page header */}
             <div className="mb-8">
                 <h1 

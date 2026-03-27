@@ -59,6 +59,33 @@ TASK_CATEGORIES = ["general", "maintenance", "inspection", "renewal", "safety", 
 NOTIFICATION_TYPES = ["expiry_reminder", "overdue_alert", "task_due", "missing_record", "system"]
 REMINDER_INTERVALS = [90, 60, 30, 7, 0]  # Days before expiry (0 = overdue)
 
+# Subscription Plans
+SUBSCRIPTION_PLANS = {
+    "solo": {
+        "name": "Solo",
+        "price_monthly": 19,
+        "price_yearly": 190,
+        "property_limit": 1,
+        "features": ["1 property", "Compliance tracking", "Document storage", "Email reminders", "Task management"]
+    },
+    "portfolio": {
+        "name": "Portfolio",
+        "price_monthly": 39,
+        "price_yearly": 390,
+        "property_limit": 5,
+        "features": ["Up to 5 properties", "Everything in Solo", "Priority support", "Bulk compliance setup", "Advanced reports"]
+    },
+    "operator": {
+        "name": "Operator",
+        "price_monthly": 79,
+        "price_yearly": 790,
+        "property_limit": 15,
+        "features": ["Up to 15 properties", "Everything in Portfolio", "API access", "Team members (coming soon)", "Custom integrations"]
+    }
+}
+SUBSCRIPTION_STATUSES = ["trial", "active", "past_due", "cancelled", "expired"]
+TRIAL_DAYS = 14
+
 # Models
 class UserCreate(BaseModel):
     email: EmailStr
@@ -75,11 +102,42 @@ class UserResponse(BaseModel):
     email: str
     full_name: str
     created_at: str
-    subscription_tier: str = "free"
+    subscription_plan: str = "solo"
+    subscription_status: str = "trial"
+    trial_start: Optional[str] = None
+    trial_end: Optional[str] = None
+    property_limit: int = 1
+    property_count: int = 0
 
 class AuthResponse(BaseModel):
     user: UserResponse
     token: str
+
+class SubscriptionResponse(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    plan: str
+    plan_name: str
+    status: str
+    property_limit: int
+    property_count: int
+    trial_start: Optional[str] = None
+    trial_end: Optional[str] = None
+    trial_days_remaining: Optional[int] = None
+    price_monthly: int
+    price_yearly: int
+    features: List[str]
+    can_upgrade: bool
+    can_downgrade: bool
+
+class SubscriptionUpdate(BaseModel):
+    plan: str  # solo, portfolio, operator
+
+class PlanLimitCheck(BaseModel):
+    allowed: bool
+    current_count: int
+    limit: int
+    plan: str
+    message: Optional[str] = None
 
 class PasswordResetRequest(BaseModel):
     email: EmailStr
@@ -329,19 +387,76 @@ async def signup(user_data: UserCreate):
     if await db.users.find_one({"email": user_data.email.lower()}):
         raise HTTPException(status_code=400, detail="Email already registered")
     user_id = str(uuid.uuid4())
-    now = datetime.now(timezone.utc).isoformat()
-    user_doc = {"id": user_id, "email": user_data.email.lower(), "password": hash_password(user_data.password), "full_name": user_data.full_name, "subscription_tier": "free", "created_at": now, "updated_at": now}
+    now = datetime.now(timezone.utc)
+    trial_end = now + timedelta(days=TRIAL_DAYS)
+    user_doc = {
+        "id": user_id, 
+        "email": user_data.email.lower(), 
+        "password": hash_password(user_data.password), 
+        "full_name": user_data.full_name, 
+        "subscription_plan": "solo",
+        "subscription_status": "trial",
+        "trial_start": now.isoformat(),
+        "trial_end": trial_end.isoformat(),
+        "created_at": now.isoformat(), 
+        "updated_at": now.isoformat()
+    }
     await db.users.insert_one(user_doc)
     token = create_token(user_id, user_data.email.lower())
-    return AuthResponse(user=UserResponse(id=user_id, email=user_data.email.lower(), full_name=user_data.full_name, created_at=now, subscription_tier="free"), token=token)
+    property_count = 0
+    plan_info = SUBSCRIPTION_PLANS.get("solo", {})
+    return AuthResponse(
+        user=UserResponse(
+            id=user_id, 
+            email=user_data.email.lower(), 
+            full_name=user_data.full_name, 
+            created_at=now.isoformat(),
+            subscription_plan="solo",
+            subscription_status="trial",
+            trial_start=now.isoformat(),
+            trial_end=trial_end.isoformat(),
+            property_limit=plan_info.get("property_limit", 1),
+            property_count=property_count
+        ), 
+        token=token
+    )
 
 @api_router.post("/auth/login", response_model=AuthResponse)
 async def login(credentials: UserLogin):
     user = await db.users.find_one({"email": credentials.email.lower()}, {"_id": 0})
     if not user or not verify_password(credentials.password, user["password"]):
         raise HTTPException(status_code=401, detail="Invalid email or password")
+    
+    # Check and update trial status if expired
+    subscription_status = user.get("subscription_status", "trial")
+    if subscription_status == "trial" and user.get("trial_end"):
+        trial_end = datetime.fromisoformat(user["trial_end"].replace('Z', '+00:00'))
+        if trial_end.tzinfo is None:
+            trial_end = trial_end.replace(tzinfo=timezone.utc)
+        if datetime.now(timezone.utc) > trial_end:
+            subscription_status = "expired"
+            await db.users.update_one({"id": user["id"]}, {"$set": {"subscription_status": "expired"}})
+    
     token = create_token(user["id"], user["email"])
-    return AuthResponse(user=UserResponse(id=user["id"], email=user["email"], full_name=user["full_name"], created_at=user["created_at"], subscription_tier=user.get("subscription_tier", "free")), token=token)
+    property_count = await db.properties.count_documents({"user_id": user["id"], "property_status": "active"})
+    plan = user.get("subscription_plan", "solo")
+    plan_info = SUBSCRIPTION_PLANS.get(plan, SUBSCRIPTION_PLANS["solo"])
+    
+    return AuthResponse(
+        user=UserResponse(
+            id=user["id"], 
+            email=user["email"], 
+            full_name=user["full_name"], 
+            created_at=user["created_at"],
+            subscription_plan=plan,
+            subscription_status=subscription_status,
+            trial_start=user.get("trial_start"),
+            trial_end=user.get("trial_end"),
+            property_limit=plan_info.get("property_limit", 1),
+            property_count=property_count
+        ), 
+        token=token
+    )
 
 @api_router.post("/auth/reset-password", response_model=PasswordResetResponse)
 async def reset_password(request: PasswordResetRequest):
@@ -350,7 +465,32 @@ async def reset_password(request: PasswordResetRequest):
 
 @api_router.get("/auth/me", response_model=UserResponse)
 async def get_me(current_user: dict = Depends(get_current_user)):
-    return UserResponse(id=current_user["id"], email=current_user["email"], full_name=current_user["full_name"], created_at=current_user["created_at"], subscription_tier=current_user.get("subscription_tier", "free"))
+    # Check and update trial status if expired
+    subscription_status = current_user.get("subscription_status", "trial")
+    if subscription_status == "trial" and current_user.get("trial_end"):
+        trial_end = datetime.fromisoformat(current_user["trial_end"].replace('Z', '+00:00'))
+        if trial_end.tzinfo is None:
+            trial_end = trial_end.replace(tzinfo=timezone.utc)
+        if datetime.now(timezone.utc) > trial_end:
+            subscription_status = "expired"
+            await db.users.update_one({"id": current_user["id"]}, {"$set": {"subscription_status": "expired"}})
+    
+    property_count = await db.properties.count_documents({"user_id": current_user["id"], "property_status": "active"})
+    plan = current_user.get("subscription_plan", "solo")
+    plan_info = SUBSCRIPTION_PLANS.get(plan, SUBSCRIPTION_PLANS["solo"])
+    
+    return UserResponse(
+        id=current_user["id"], 
+        email=current_user["email"], 
+        full_name=current_user["full_name"], 
+        created_at=current_user["created_at"],
+        subscription_plan=plan,
+        subscription_status=subscription_status,
+        trial_start=current_user.get("trial_start"),
+        trial_end=current_user.get("trial_end"),
+        property_limit=plan_info.get("property_limit", 1),
+        property_count=property_count
+    )
 
 # Dashboard Routes
 @api_router.get("/dashboard/stats", response_model=DashboardStats)
@@ -926,6 +1066,167 @@ async def update_user_preferences(prefs_data: UserPreferencesUpdate, current_use
         reminder_lead_days=prefs.get("reminder_lead_days", [90, 60, 30, 7])
     )
 
+# Subscription Management Routes
+@api_router.get("/subscription", response_model=SubscriptionResponse)
+async def get_subscription(current_user: dict = Depends(get_current_user)):
+    """Get current user's subscription details"""
+    plan = current_user.get("subscription_plan", "solo")
+    status = current_user.get("subscription_status", "trial")
+    plan_info = SUBSCRIPTION_PLANS.get(plan, SUBSCRIPTION_PLANS["solo"])
+    
+    # Check if trial expired
+    if status == "trial" and current_user.get("trial_end"):
+        trial_end = datetime.fromisoformat(current_user["trial_end"].replace('Z', '+00:00'))
+        if trial_end.tzinfo is None:
+            trial_end = trial_end.replace(tzinfo=timezone.utc)
+        if datetime.now(timezone.utc) > trial_end:
+            status = "expired"
+            await db.users.update_one({"id": current_user["id"]}, {"$set": {"subscription_status": "expired"}})
+    
+    property_count = await db.properties.count_documents({"user_id": current_user["id"], "property_status": "active"})
+    
+    # Calculate trial days remaining
+    trial_days_remaining = None
+    if status == "trial" and current_user.get("trial_end"):
+        trial_end = datetime.fromisoformat(current_user["trial_end"].replace('Z', '+00:00'))
+        if trial_end.tzinfo is None:
+            trial_end = trial_end.replace(tzinfo=timezone.utc)
+        trial_days_remaining = max(0, (trial_end - datetime.now(timezone.utc)).days)
+    
+    # Determine upgrade/downgrade options
+    plan_order = ["solo", "portfolio", "operator"]
+    current_idx = plan_order.index(plan) if plan in plan_order else 0
+    can_upgrade = current_idx < len(plan_order) - 1
+    can_downgrade = current_idx > 0 and property_count <= SUBSCRIPTION_PLANS[plan_order[current_idx - 1]]["property_limit"]
+    
+    return SubscriptionResponse(
+        plan=plan,
+        plan_name=plan_info["name"],
+        status=status,
+        property_limit=plan_info["property_limit"],
+        property_count=property_count,
+        trial_start=current_user.get("trial_start"),
+        trial_end=current_user.get("trial_end"),
+        trial_days_remaining=trial_days_remaining,
+        price_monthly=plan_info["price_monthly"],
+        price_yearly=plan_info["price_yearly"],
+        features=plan_info["features"],
+        can_upgrade=can_upgrade,
+        can_downgrade=can_downgrade
+    )
+
+@api_router.get("/subscription/plans")
+async def get_subscription_plans():
+    """Get all available subscription plans"""
+    return {
+        "plans": SUBSCRIPTION_PLANS,
+        "trial_days": TRIAL_DAYS
+    }
+
+@api_router.post("/subscription/change", response_model=SubscriptionResponse)
+async def change_subscription(update: SubscriptionUpdate, current_user: dict = Depends(get_current_user)):
+    """Change subscription plan (upgrade or downgrade)"""
+    new_plan = update.plan.lower()
+    if new_plan not in SUBSCRIPTION_PLANS:
+        raise HTTPException(status_code=400, detail="Invalid plan selected")
+    
+    new_plan_info = SUBSCRIPTION_PLANS[new_plan]
+    
+    # Check if downgrade is possible (property count must be within new limit)
+    property_count = await db.properties.count_documents({"user_id": current_user["id"], "property_status": "active"})
+    if property_count > new_plan_info["property_limit"]:
+        raise HTTPException(
+            status_code=400, 
+            detail=f"Cannot downgrade to {new_plan_info['name']} plan. You have {property_count} properties but the limit is {new_plan_info['property_limit']}. Please remove some properties first."
+        )
+    
+    # Update subscription
+    now = datetime.now(timezone.utc).isoformat()
+    update_data = {
+        "subscription_plan": new_plan,
+        "subscription_status": "active",  # Changing plan activates subscription
+        "updated_at": now
+    }
+    
+    await db.users.update_one({"id": current_user["id"]}, {"$set": update_data})
+    
+    # Return updated subscription
+    plan_order = ["solo", "portfolio", "operator"]
+    current_idx = plan_order.index(new_plan) if new_plan in plan_order else 0
+    can_upgrade = current_idx < len(plan_order) - 1
+    can_downgrade = current_idx > 0 and property_count <= SUBSCRIPTION_PLANS[plan_order[current_idx - 1]]["property_limit"]
+    
+    return SubscriptionResponse(
+        plan=new_plan,
+        plan_name=new_plan_info["name"],
+        status="active",
+        property_limit=new_plan_info["property_limit"],
+        property_count=property_count,
+        trial_start=current_user.get("trial_start"),
+        trial_end=current_user.get("trial_end"),
+        trial_days_remaining=None,
+        price_monthly=new_plan_info["price_monthly"],
+        price_yearly=new_plan_info["price_yearly"],
+        features=new_plan_info["features"],
+        can_upgrade=can_upgrade,
+        can_downgrade=can_downgrade
+    )
+
+@api_router.get("/subscription/check-limit", response_model=PlanLimitCheck)
+async def check_property_limit(current_user: dict = Depends(get_current_user)):
+    """Check if user can add another property based on their plan"""
+    plan = current_user.get("subscription_plan", "solo")
+    status = current_user.get("subscription_status", "trial")
+    plan_info = SUBSCRIPTION_PLANS.get(plan, SUBSCRIPTION_PLANS["solo"])
+    
+    property_count = await db.properties.count_documents({"user_id": current_user["id"], "property_status": "active"})
+    property_limit = plan_info["property_limit"]
+    
+    # Check if trial expired
+    if status == "trial" and current_user.get("trial_end"):
+        trial_end = datetime.fromisoformat(current_user["trial_end"].replace('Z', '+00:00'))
+        if trial_end.tzinfo is None:
+            trial_end = trial_end.replace(tzinfo=timezone.utc)
+        if datetime.now(timezone.utc) > trial_end:
+            return PlanLimitCheck(
+                allowed=False,
+                current_count=property_count,
+                limit=property_limit,
+                plan=plan,
+                message="Your trial has expired. Please upgrade to continue using Staylet."
+            )
+    
+    if property_count >= property_limit:
+        next_plan = None
+        plan_order = ["solo", "portfolio", "operator"]
+        current_idx = plan_order.index(plan) if plan in plan_order else 0
+        if current_idx < len(plan_order) - 1:
+            next_plan = plan_order[current_idx + 1]
+            next_plan_info = SUBSCRIPTION_PLANS[next_plan]
+            return PlanLimitCheck(
+                allowed=False,
+                current_count=property_count,
+                limit=property_limit,
+                plan=plan,
+                message=f"You've reached the {property_limit} property limit on your {plan_info['name']} plan. Upgrade to {next_plan_info['name']} for up to {next_plan_info['property_limit']} properties."
+            )
+        else:
+            return PlanLimitCheck(
+                allowed=False,
+                current_count=property_count,
+                limit=property_limit,
+                plan=plan,
+                message=f"You've reached the maximum of {property_limit} properties on the {plan_info['name']} plan. Contact support for enterprise options."
+            )
+    
+    return PlanLimitCheck(
+        allowed=True,
+        current_count=property_count,
+        limit=property_limit,
+        plan=plan,
+        message=None
+    )
+
 @api_router.get("/constants")
 async def get_constants():
     return {
@@ -941,7 +1242,9 @@ async def get_constants():
         "notification_types": NOTIFICATION_TYPES,
         "reminder_intervals": REMINDER_INTERVALS,
         "allowed_file_types": list(ALLOWED_FILE_TYPES.keys()),
-        "max_file_size": MAX_FILE_SIZE
+        "max_file_size": MAX_FILE_SIZE,
+        "subscription_plans": SUBSCRIPTION_PLANS,
+        "trial_days": TRIAL_DAYS
     }
 
 # Document Upload and Extraction Routes

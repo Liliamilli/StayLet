@@ -9,6 +9,7 @@ export function AuthProvider({ children }) {
     const [user, setUser] = useState(null);
     const [token, setToken] = useState(localStorage.getItem('staylet_token'));
     const [loading, setLoading] = useState(true);
+    const [subscription, setSubscription] = useState(null);
 
     // Configure axios defaults
     useEffect(() => {
@@ -29,6 +30,13 @@ export function AuthProvider({ children }) {
         try {
             const response = await axios.get(`${API_URL}/api/auth/me`);
             setUser(response.data);
+            // Also fetch subscription details
+            try {
+                const subResponse = await axios.get(`${API_URL}/api/subscription`);
+                setSubscription(subResponse.data);
+            } catch (e) {
+                console.error('Failed to fetch subscription:', e);
+            }
         } catch (error) {
             console.error('Token verification failed:', error);
             localStorage.removeItem('staylet_token');
@@ -43,6 +51,17 @@ export function AuthProvider({ children }) {
         verifyToken();
     }, [verifyToken]);
 
+    const refreshSubscription = async () => {
+        try {
+            const response = await axios.get(`${API_URL}/api/subscription`);
+            setSubscription(response.data);
+            return response.data;
+        } catch (error) {
+            console.error('Failed to refresh subscription:', error);
+            return null;
+        }
+    };
+
     const signup = async (email, password, fullName) => {
         const response = await axios.post(`${API_URL}/api/auth/signup`, {
             email,
@@ -54,6 +73,15 @@ export function AuthProvider({ children }) {
         localStorage.setItem('staylet_token', authToken);
         setToken(authToken);
         setUser(userData);
+        
+        // Set initial subscription from user data
+        setSubscription({
+            plan: userData.subscription_plan,
+            status: userData.subscription_status,
+            property_limit: userData.property_limit,
+            property_count: userData.property_count,
+            trial_end: userData.trial_end
+        });
         
         return userData;
     };
@@ -69,6 +97,14 @@ export function AuthProvider({ children }) {
         setToken(authToken);
         setUser(userData);
         
+        // Fetch full subscription details
+        try {
+            const subResponse = await axios.get(`${API_URL}/api/subscription`);
+            setSubscription(subResponse.data);
+        } catch (e) {
+            console.error('Failed to fetch subscription:', e);
+        }
+        
         return userData;
     };
 
@@ -76,6 +112,7 @@ export function AuthProvider({ children }) {
         localStorage.removeItem('staylet_token');
         setToken(null);
         setUser(null);
+        setSubscription(null);
         delete axios.defaults.headers.common['Authorization'];
     };
 
@@ -91,6 +128,8 @@ export function AuthProvider({ children }) {
         token,
         loading,
         isAuthenticated: !!user,
+        subscription,
+        refreshSubscription,
         signup,
         login,
         logout,

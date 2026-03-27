@@ -1,0 +1,103 @@
+{
+  "summary": "Phase 5 Subscription Billing testing completed. All 18 backend tests passed (100%). Frontend UI verified: Landing page pricing (3 plans), billing page, trial banners, upgrade modal, plan change functionality.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "passed_tests": [
+    "Backend: GET /api/subscription/plans returns all 3 plans (Solo, Portfolio, Operator)",
+    "Backend: Solo plan - £19/month, £190/year, 1 property limit",
+    "Backend: Portfolio plan - £39/month, £390/year, 5 property limit",
+    "Backend: Operator plan - £79/month, £790/year, 15 property limit",
+    "Backend: Plans endpoint includes trial_days=14",
+    "Backend: GET /api/subscription requires authentication",
+    "Backend: GET /api/subscription returns plan details with all required fields",
+    "Backend: Subscription includes trial_start, trial_end, trial_days_remaining",
+    "Backend: GET /api/subscription/check-limit requires authentication",
+    "Backend: Check-limit returns allowed, current_count, limit, plan fields",
+    "Backend: Check-limit returns allowed=false when at property limit",
+    "Backend: POST /api/subscription/change requires authentication",
+    "Backend: Invalid plan name rejected with 400",
+    "Backend: Upgrade to Portfolio works correctly",
+    "Backend: Downgrade blocked if property count exceeds new plan limit",
+    "Backend: New signup creates user with Solo plan, trial status, 14-day trial",
+    "Backend: Constants endpoint includes subscription_plans and trial_days",
+    "Backend: /api/auth/me includes subscription fields",
+    "Frontend: Landing page shows 3 pricing plans (Solo £19, Portfolio £39, Operator £79)",
+    "Frontend: Landing page shows 'Most Popular' badge on Portfolio plan",
+    "Frontend: Landing page shows '14-day free trial on all plans'",
+    "Frontend: Dashboard shows trial banner with days remaining for trial users",
+    "Frontend: Dashboard trial banner shows 'Upgrade Now' button",
+    "Frontend: Sidebar shows 'CURRENT PLAN: Free Trial' with 'Upgrade Plan' link",
+    "Frontend: Billing page shows 'Free Trial Active' banner for trial users",
+    "Frontend: Billing page shows current subscription (plan, status, properties, price)",
+    "Frontend: Billing page shows all 3 plan cards with correct pricing",
+    "Frontend: Billing page shows 'Current Plan' badge on active plan",
+    "Frontend: Billing page shows Upgrade/Downgrade buttons appropriately",
+    "Frontend: Billing page shows Billing History placeholder",
+    "Frontend: Billing page shows Payment Method placeholder (Stripe coming soon)",
+    "Frontend: Upgrade modal appears when trying to add property at limit",
+    "Frontend: Upgrade modal shows current plan, property count, and upgrade option",
+    "Frontend: Upgrade modal has 'Upgrade Now', 'Maybe Later', 'View All Plans' buttons"
+  ],
+  "test_report_links": [
+    "/app/backend/tests/test_phase5_subscription.py",
+    "/app/test_reports/pytest/pytest_phase5_results.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [],
+  "updated_files": [
+    "/app/backend/tests/test_phase5_subscription.py"
+  ],
+  "success_rate": {
+    "backend": "100% (18 passed)",
+    "frontend": "100%"
+  },
+  "test_credentials": {
+    "trial_user": "trialtest@staylet.com / Test1234! (upgraded to Portfolio during testing)",
+    "limit_user": "bugtest@staylet.com / Test1234! (Solo plan with 2 properties, at limit)"
+  },
+  "seed_data_creation": "New test users created during signup tests are isolated",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Phase 5 subscription billing fully implemented and tested. Backend has /api/subscription, /api/subscription/plans, /api/subscription/check-limit, /api/subscription/change endpoints. Frontend has BillingPage with plan cards, UpgradePlanModal for limit enforcement, trial banners on Dashboard and BillingPage. Plan limits: Solo=1, Portfolio=5, Operator=15 properties. 14-day free trial on signup. Stripe payment is MOCKED (placeholder UI only).",
+  "mocked_features": {
+    "stripe_payment": "Placeholder UI on billing page - 'Payment processing via Stripe coming soon'",
+    "email_reminders": "UI toggle exists but no actual email sending",
+    "password_reset": "Returns success without sending email"
+  },
+  "verified_phase5_features": {
+    "subscription_plans": {
+      "solo": {"price_monthly": 19, "price_yearly": 190, "property_limit": 1},
+      "portfolio": {"price_monthly": 39, "price_yearly": 390, "property_limit": 5},
+      "operator": {"price_monthly": 79, "price_yearly": 790, "property_limit": 15}
+    },
+    "trial_system": {
+      "duration": "14 days",
+      "default_plan": "solo",
+      "status": "trial",
+      "trial_end_date": "Set on signup"
+    },
+    "plan_limit_enforcement": {
+      "check_endpoint": "/api/subscription/check-limit",
+      "upgrade_modal": "UpgradePlanModal.js shows when at limit",
+      "blocks_property_creation": true
+    },
+    "plan_change": {
+      "upgrade": "Works correctly, sets status to 'active'",
+      "downgrade": "Blocked if property count exceeds new plan limit"
+    },
+    "ui_components": {
+      "landing_page_pricing": "3 plan cards with features and CTA buttons",
+      "billing_page": "Current subscription, available plans, billing history, payment method",
+      "trial_banner_dashboard": "Shows days remaining, plan info, upgrade button",
+      "trial_banner_billing": "Shows trial end date, plan features",
+      "sidebar_plan_status": "Shows 'Free Trial' or plan name with upgrade link"
+    }
+  }
+}

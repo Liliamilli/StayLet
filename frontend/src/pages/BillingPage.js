@@ -1,165 +1,333 @@
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useAuth } from '../contexts/AuthContext';
+import axios from 'axios';
 import { Button } from '../components/ui/button';
 import { 
     CreditCard, 
-    CheckCircle2, 
+    Check, 
+    Building2, 
+    Clock, 
+    AlertTriangle,
+    Sparkles,
+    Crown,
+    Zap,
     ArrowRight,
-    Sparkles
+    Loader2,
+    Receipt,
+    Calendar
 } from 'lucide-react';
 
-const plans = [
-    {
-        name: 'Starter',
-        price: '£9',
-        period: '/month',
-        description: 'Perfect for hosts with 1-2 properties',
-        features: [
-            'Up to 2 properties',
-            'All compliance tracking',
-            'Email reminders',
-            'Document storage (1GB)',
-            'Basic support'
-        ],
-        current: false,
-        popular: false
-    },
-    {
-        name: 'Professional',
-        price: '£29',
-        period: '/month',
-        description: 'For growing portfolios',
-        features: [
-            'Up to 10 properties',
-            'Everything in Starter',
-            'Priority reminders',
-            'Document storage (10GB)',
-            'Priority support',
-            'Compliance reports'
-        ],
-        current: false,
-        popular: true
-    },
-    {
-        name: 'Business',
-        price: '£79',
-        period: '/month',
-        description: 'For property managers',
-        features: [
-            'Unlimited properties',
-            'Everything in Professional',
-            'Team access',
-            'Document storage (50GB)',
-            'Dedicated support',
-            'API access',
-            'Custom branding'
-        ],
-        current: false,
-        popular: false
-    }
-];
+const API_URL = process.env.REACT_APP_BACKEND_URL;
+
+const PLAN_ICONS = {
+    solo: Building2,
+    portfolio: Zap,
+    operator: Crown
+};
+
+const PLAN_COLORS = {
+    solo: { bg: 'bg-slate-100', text: 'text-slate-700', border: 'border-slate-200', accent: 'bg-slate-600' },
+    portfolio: { bg: 'bg-blue-100', text: 'text-blue-700', border: 'border-blue-200', accent: 'bg-blue-600' },
+    operator: { bg: 'bg-purple-100', text: 'text-purple-700', border: 'border-purple-200', accent: 'bg-purple-600' }
+};
+
+function PlanCard({ plan, planKey, isCurrentPlan, subscription, onSelect, loading }) {
+    const Icon = PLAN_ICONS[planKey] || Building2;
+    const colors = PLAN_COLORS[planKey] || PLAN_COLORS.solo;
+    const isPopular = planKey === 'portfolio';
+    const canSelect = !isCurrentPlan && (
+        plan.property_limit > (subscription?.property_count || 0) || 
+        plan.property_limit > (subscription?.property_limit || 1)
+    );
+    const isDowngrade = plan.property_limit < (subscription?.property_limit || 1);
+    const cantDowngrade = isDowngrade && (subscription?.property_count || 0) > plan.property_limit;
+
+    return (
+        <div className={`
+            relative rounded-xl border-2 p-6 transition-all
+            ${isCurrentPlan ? 'border-blue-500 bg-blue-50/50' : colors.border + ' bg-white hover:border-slate-300'}
+            ${isPopular && !isCurrentPlan ? 'ring-2 ring-blue-500 ring-offset-2' : ''}
+        `}>
+            {isPopular && !isCurrentPlan && (
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 bg-blue-600 text-white text-xs font-medium rounded-full">
+                    Most Popular
+                </div>
+            )}
+            
+            {isCurrentPlan && (
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 bg-emerald-600 text-white text-xs font-medium rounded-full flex items-center gap-1">
+                    <Check className="w-3 h-3" />
+                    Current Plan
+                </div>
+            )}
+
+            <div className="text-center mb-6">
+                <div className={`w-12 h-12 ${colors.bg} rounded-xl flex items-center justify-center mx-auto mb-3`}>
+                    <Icon className={`w-6 h-6 ${colors.text}`} />
+                </div>
+                <h3 className="text-xl font-bold text-slate-900" style={{ fontFamily: 'Outfit, sans-serif' }}>
+                    {plan.name}
+                </h3>
+                <div className="mt-2">
+                    <span className="text-3xl font-bold text-slate-900">£{plan.price_monthly}</span>
+                    <span className="text-slate-500">/month</span>
+                </div>
+                <p className="text-sm text-slate-500 mt-1">
+                    or £{plan.price_yearly}/year (save £{plan.price_monthly * 12 - plan.price_yearly})
+                </p>
+            </div>
+
+            <ul className="space-y-3 mb-6">
+                {plan.features.map((feature, idx) => (
+                    <li key={idx} className="flex items-start gap-2 text-sm">
+                        <Check className={`w-4 h-4 mt-0.5 flex-shrink-0 ${colors.text}`} />
+                        <span className="text-slate-700">{feature}</span>
+                    </li>
+                ))}
+            </ul>
+
+            {isCurrentPlan ? (
+                <Button disabled className="w-full" variant="outline">
+                    <Check className="w-4 h-4 mr-2" />
+                    Current Plan
+                </Button>
+            ) : cantDowngrade ? (
+                <Button disabled className="w-full" variant="outline">
+                    Remove properties to downgrade
+                </Button>
+            ) : (
+                <Button 
+                    onClick={() => onSelect(planKey)}
+                    disabled={loading}
+                    className={`w-full ${isDowngrade ? 'bg-slate-600 hover:bg-slate-700' : colors.accent + ' hover:opacity-90'} text-white`}
+                >
+                    {loading ? (
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    ) : isDowngrade ? (
+                        'Downgrade'
+                    ) : (
+                        <>
+                            Upgrade
+                            <ArrowRight className="w-4 h-4 ml-2" />
+                        </>
+                    )}
+                </Button>
+            )}
+        </div>
+    );
+}
 
 export default function BillingPage() {
-    const navigate = useNavigate();
+    const { subscription, refreshSubscription } = useAuth();
+    const [plans, setPlans] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [changingPlan, setChangingPlan] = useState(false);
+    const [selectedPlan, setSelectedPlan] = useState(null);
+
+    useEffect(() => {
+        fetchPlans();
+    }, []);
+
+    const fetchPlans = async () => {
+        try {
+            const response = await axios.get(`${API_URL}/api/subscription/plans`);
+            setPlans(response.data.plans);
+        } catch (error) {
+            console.error('Failed to fetch plans:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handlePlanChange = async (planKey) => {
+        if (!window.confirm(`Are you sure you want to ${plans[planKey].property_limit > subscription.property_limit ? 'upgrade' : 'downgrade'} to the ${plans[planKey].name} plan?`)) {
+            return;
+        }
+
+        setChangingPlan(true);
+        setSelectedPlan(planKey);
+        try {
+            await axios.post(`${API_URL}/api/subscription/change`, { plan: planKey });
+            await refreshSubscription();
+        } catch (error) {
+            console.error('Failed to change plan:', error);
+            alert(error.response?.data?.detail || 'Failed to change plan. Please try again.');
+        } finally {
+            setChangingPlan(false);
+            setSelectedPlan(null);
+        }
+    };
+
+    const formatDate = (dateStr) => {
+        if (!dateStr) return '—';
+        return new Date(dateStr).toLocaleDateString('en-GB', { 
+            day: 'numeric', 
+            month: 'long', 
+            year: 'numeric' 
+        });
+    };
+
+    if (loading) {
+        return (
+            <div className="animate-pulse space-y-6">
+                <div className="h-8 bg-slate-200 rounded w-48" />
+                <div className="h-64 bg-slate-200 rounded-lg" />
+            </div>
+        );
+    }
+
+    const isTrialActive = subscription?.status === 'trial' && subscription?.trial_days_remaining > 0;
+    const isTrialExpired = subscription?.status === 'expired';
 
     return (
         <div data-testid="billing-page">
             {/* Page header */}
             <div className="mb-8">
-                <h1 
-                    className="text-2xl font-bold text-slate-900 mb-1"
-                    style={{ fontFamily: 'Outfit, sans-serif' }}
-                >
-                    Billing
+                <h1 className="text-2xl font-bold text-slate-900 mb-1" style={{ fontFamily: 'Outfit, sans-serif' }}>
+                    Billing & Subscription
                 </h1>
                 <p className="text-slate-500">
-                    Manage your subscription and payment methods
+                    Manage your subscription plan and billing details
                 </p>
             </div>
 
-            {/* Current plan */}
-            <div className="bg-white rounded-lg border border-slate-200 p-6 mb-8">
-                <div className="flex items-start justify-between">
-                    <div>
-                        <div className="flex items-center gap-2 mb-2">
-                            <h2 
-                                className="text-lg font-semibold text-slate-900"
-                                style={{ fontFamily: 'Outfit, sans-serif' }}
-                            >
-                                Current Plan
-                            </h2>
-                            <span className="badge-neutral">Free Trial</span>
+            {/* Trial Banner */}
+            {isTrialActive && (
+                <div className="mb-6 p-4 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl text-white">
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                            <div className="p-2 bg-white/20 rounded-lg">
+                                <Sparkles className="w-5 h-5" />
+                            </div>
+                            <div>
+                                <p className="font-semibold">Free Trial Active</p>
+                                <p className="text-sm text-blue-100">
+                                    {subscription.trial_days_remaining} days remaining • Ends {formatDate(subscription.trial_end)}
+                                </p>
+                            </div>
                         </div>
-                        <p className="text-sm text-slate-500">
-                            You're currently on the free trial. Upgrade to unlock all features.
+                        <div className="text-right">
+                            <p className="text-sm text-blue-100">Trial includes full access to</p>
+                            <p className="font-semibold">{subscription.plan_name} plan features</p>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Trial Expired Banner */}
+            {isTrialExpired && (
+                <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-xl">
+                    <div className="flex items-center gap-3">
+                        <AlertTriangle className="w-5 h-5 text-amber-600" />
+                        <div>
+                            <p className="font-semibold text-amber-900">Your trial has expired</p>
+                            <p className="text-sm text-amber-700">
+                                Choose a plan below to continue using Staylet.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Current Subscription Card */}
+            <div className="bg-white rounded-xl border border-slate-200 p-6 mb-8">
+                <h2 className="text-lg font-semibold text-slate-900 mb-4" style={{ fontFamily: 'Outfit, sans-serif' }}>
+                    Current Subscription
+                </h2>
+                
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                    <div>
+                        <p className="text-sm text-slate-500 mb-1">Plan</p>
+                        <p className="font-semibold text-slate-900 text-lg">{subscription?.plan_name || 'Solo'}</p>
+                    </div>
+                    <div>
+                        <p className="text-sm text-slate-500 mb-1">Status</p>
+                        <span className={`
+                            inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-sm font-medium
+                            ${subscription?.status === 'active' ? 'bg-emerald-100 text-emerald-700' : 
+                              subscription?.status === 'trial' ? 'bg-blue-100 text-blue-700' : 
+                              'bg-amber-100 text-amber-700'}
+                        `}>
+                            {subscription?.status === 'active' && <Check className="w-3.5 h-3.5" />}
+                            {subscription?.status === 'trial' && <Clock className="w-3.5 h-3.5" />}
+                            {subscription?.status === 'expired' && <AlertTriangle className="w-3.5 h-3.5" />}
+                            {subscription?.status === 'active' ? 'Active' : 
+                             subscription?.status === 'trial' ? 'Trial' : 'Expired'}
+                        </span>
+                    </div>
+                    <div>
+                        <p className="text-sm text-slate-500 mb-1">Properties</p>
+                        <p className="font-semibold text-slate-900">
+                            {subscription?.property_count || 0} / {subscription?.property_limit || 1}
                         </p>
                     </div>
-                    <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                        <CreditCard className="w-6 h-6 text-blue-600" />
+                    <div>
+                        <p className="text-sm text-slate-500 mb-1">Monthly Price</p>
+                        <p className="font-semibold text-slate-900">
+                            £{subscription?.price_monthly || 19}/month
+                        </p>
                     </div>
                 </div>
             </div>
 
-            {/* Available plans */}
-            <h2 
-                className="text-lg font-semibold text-slate-900 mb-4"
-                style={{ fontFamily: 'Outfit, sans-serif' }}
-            >
-                Available Plans
-            </h2>
+            {/* Plans Grid */}
+            <div className="mb-8">
+                <h2 className="text-lg font-semibold text-slate-900 mb-4" style={{ fontFamily: 'Outfit, sans-serif' }}>
+                    Available Plans
+                </h2>
+                
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    {plans && Object.entries(plans).map(([key, plan]) => (
+                        <PlanCard
+                            key={key}
+                            planKey={key}
+                            plan={plan}
+                            isCurrentPlan={subscription?.plan === key}
+                            subscription={subscription}
+                            onSelect={handlePlanChange}
+                            loading={changingPlan && selectedPlan === key}
+                        />
+                    ))}
+                </div>
+            </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {plans.map((plan, index) => (
-                    <div 
-                        key={index}
-                        className={`
-                            relative bg-white rounded-lg p-6 border
-                            ${plan.popular 
-                                ? 'border-blue-600 ring-2 ring-blue-600' 
-                                : 'border-slate-200'
-                            }
-                        `}
-                        data-testid={`plan-${plan.name.toLowerCase()}`}
-                    >
-                        {plan.popular && (
-                            <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                                <span className="bg-blue-600 text-white text-xs font-semibold px-3 py-1 rounded-full inline-flex items-center gap-1">
-                                    <Sparkles className="w-3 h-3" />
-                                    Most Popular
-                                </span>
-                            </div>
-                        )}
+            {/* Billing History Placeholder */}
+            <div className="bg-white rounded-xl border border-slate-200 p-6">
+                <h2 className="text-lg font-semibold text-slate-900 mb-4 flex items-center gap-2" style={{ fontFamily: 'Outfit, sans-serif' }}>
+                    <Receipt className="w-5 h-5 text-slate-400" />
+                    Billing History
+                </h2>
+                
+                <div className="text-center py-8 text-slate-500">
+                    <Calendar className="w-10 h-10 text-slate-300 mx-auto mb-3" />
+                    <p className="text-sm">No billing history yet</p>
+                    <p className="text-xs text-slate-400 mt-1">
+                        Invoices will appear here once you subscribe to a paid plan
+                    </p>
+                </div>
+            </div>
 
-                        <h3 className="text-lg font-semibold text-slate-900 mb-1" style={{ fontFamily: 'Outfit, sans-serif' }}>
-                            {plan.name}
-                        </h3>
-                        <p className="text-sm text-slate-500 mb-4">{plan.description}</p>
-                        
-                        <div className="mb-6">
-                            <span className="text-3xl font-bold text-slate-900" style={{ fontFamily: 'Outfit, sans-serif' }}>
-                                {plan.price}
-                            </span>
-                            <span className="text-slate-500">{plan.period}</span>
+            {/* Payment Method Placeholder */}
+            <div className="mt-6 bg-white rounded-xl border border-slate-200 p-6">
+                <h2 className="text-lg font-semibold text-slate-900 mb-4 flex items-center gap-2" style={{ fontFamily: 'Outfit, sans-serif' }}>
+                    <CreditCard className="w-5 h-5 text-slate-400" />
+                    Payment Method
+                </h2>
+                
+                <div className="flex items-center justify-between p-4 bg-slate-50 rounded-lg">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-7 bg-slate-200 rounded flex items-center justify-center">
+                            <CreditCard className="w-5 h-5 text-slate-400" />
                         </div>
-
-                        <ul className="space-y-2.5 mb-6">
-                            {plan.features.map((feature, fIndex) => (
-                                <li key={fIndex} className="flex items-start gap-2 text-sm text-slate-600">
-                                    <CheckCircle2 className="w-4 h-4 text-emerald-500 flex-shrink-0 mt-0.5" />
-                                    {feature}
-                                </li>
-                            ))}
-                        </ul>
-
-                        <Button 
-                            className={`w-full ${plan.popular ? 'bg-blue-600 hover:bg-blue-700 text-white' : ''}`}
-                            variant={plan.popular ? 'default' : 'outline'}
-                            data-testid={`upgrade-${plan.name.toLowerCase()}`}
-                        >
-                            {plan.name === 'Business' ? 'Contact Sales' : 'Upgrade'}
-                            <ArrowRight className="w-4 h-4 ml-2" />
-                        </Button>
+                        <span className="text-sm text-slate-500">No payment method added</span>
                     </div>
-                ))}
+                    <Button variant="outline" size="sm" disabled>
+                        Add Card
+                    </Button>
+                </div>
+                <p className="text-xs text-slate-400 mt-3">
+                    Payment processing via Stripe coming soon. Your trial doesn't require a card.
+                </p>
             </div>
         </div>
     );
