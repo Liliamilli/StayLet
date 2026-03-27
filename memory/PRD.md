@@ -301,6 +301,34 @@ Build a SaaS web app called Staylet that helps UK short-term let hosts track com
   - FAQ: 4 categories with expandable accordion
   - Contact Support CTA linking to Settings
 
+### AI Assistant (December 2025)
+- **Dashboard Compliance Assistant**:
+  - Dark-themed panel on dashboard left side
+  - Priority summary cards:
+    - Highest Risk Property (with risk reasons)
+    - Next Urgent Actions (critical/high priority items)
+    - Missing Records by property
+  - Quick Questions: Pre-built suggested queries
+  - Natural language input with Send button
+  - GPT-4o powered responses grounded in user data
+
+- **Property-Level Assistant**:
+  - AI Summary panel on each property detail page
+  - Compliance Score (0-100%) with color-coded badge
+  - Quick stats: Compliant/Expiring/Overdue/Missing
+  - Recommended Actions: Clickable cards with priority levels
+  - Pending Tasks: Upcoming task list with due dates
+
+- **API Endpoints**:
+  - GET `/api/assistant/insights` - Structured dashboard insights
+  - GET `/api/assistant/property/{id}` - Property-level insights
+  - POST `/api/assistant/ask` - Natural language queries
+
+- **Technical Implementation**:
+  - `ai_assistant.py`: Pure data queries for structured insights (fast, accurate)
+  - GPT-4o via emergentintegrations for natural language (grounded responses)
+  - Risk scoring algorithm: Overdue (30pts), Missing (20pts), Expiring (10pts)
+
 ## Next Tasks (P1)
 1. Refactor `server.py` (2100+ lines) into modular `/routes/` and `/models/` directories
 2. Implement real email integration for notifications and password reset (SendGrid/Resend)
@@ -332,6 +360,11 @@ Build a SaaS web app called Staylet that helps UK short-term let hosts track com
 - GET `/api/properties/{id}/export` - Generate PDF compliance report
 - POST `/api/auth/change-password` - Change user's password
 - POST `/api/contact` - Submit support/billing/feedback request
+
+### AI Assistant Endpoints
+- GET `/api/assistant/insights` - Dashboard structured insights
+- GET `/api/assistant/property/{id}` - Property-level insights
+- POST `/api/assistant/ask` - Natural language queries (GPT-4o)
 
 ### Other Endpoints (Previous Phases)
 - Auth: `/api/auth/signup`, `/api/auth/login`, `/api/auth/forgot-password`, `/api/auth/demo`
