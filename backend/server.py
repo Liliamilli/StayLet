@@ -505,8 +505,13 @@ class ChangePasswordRequest(BaseModel):
 @api_router.post("/auth/change-password")
 async def change_password(request: ChangePasswordRequest, current_user: dict = Depends(get_current_user)):
     """Change user's password."""
+    # Fetch user with password for verification (get_current_user excludes password)
+    user_with_password = await db.users.find_one({"id": current_user["id"]}, {"_id": 0})
+    if not user_with_password:
+        raise HTTPException(status_code=401, detail="User not found")
+    
     # Verify current password
-    if not verify_password(request.current_password, current_user["password"]):
+    if not verify_password(request.current_password, user_with_password["password"]):
         raise HTTPException(status_code=400, detail="Current password is incorrect")
     
     # Hash new password and update
