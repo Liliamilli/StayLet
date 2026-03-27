@@ -1,0 +1,119 @@
+{
+  "project_name": "Staylet",
+  "domain": "SaaS for UK short-term let hosts",
+  "theme": "Light",
+  "archetype": "Swiss & High-Contrast (Modern Minimal B2B SaaS)",
+  "colors": {
+    "background": {
+      "primary": "#FFFFFF",
+      "secondary": "#F8FAFC",
+      "tertiary": "#F1F5F9"
+    },
+    "text": {
+      "primary": "#0F172A",
+      "secondary": "#475569",
+      "tertiary": "#64748B",
+      "inverse": "#FFFFFF"
+    },
+    "brand": {
+      "primary": "#2563EB",
+      "hover": "#1D4ED8",
+      "accent": "#DBEAFE"
+    },
+    "status": {
+      "success": "#10B981",
+      "success_bg": "#ECFDF5",
+      "warning": "#F59E0B",
+      "warning_bg": "#FFFBEB",
+      "error": "#EF4444",
+      "error_bg": "#FEF2F2",
+      "info": "#3B82F6",
+      "info_bg": "#EFF6FF"
+    },
+    "border": {
+      "default": "#E2E8F0",
+      "focus": "#93C5FD"
+    }
+  },
+  "typography": {
+    "headings": {
+      "font_family": "Outfit, sans-serif",
+      "weights": ["500", "600", "700"],
+      "tracking": "tracking-tight"
+    },
+    "body": {
+      "font_family": "Inter, sans-serif",
+      "weights": ["400", "500"],
+      "tracking": "tracking-normal"
+    },
+    "mono": {
+      "font_family": "JetBrains Mono, monospace"
+    }
+  },
+  "spacing_and_layout": {
+    "marketing": {
+      "section_padding": "py-20 md:py-32",
+      "container": "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8",
+      "grid": "grid-cols-1 md:grid-cols-12 gap-8"
+    },
+    "dashboard": {
+      "sidebar_width": "w-64",
+      "header_height": "h-16",
+      "content_padding": "p-6 md:p-8",
+      "widget_gap": "gap-6",
+      "radius": "rounded-lg"
+    }
+  },
+  "components": {
+    "cards": {
+      "default": "bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden",
+      "interactive": "bg-white border border-slate-200 rounded-lg shadow-sm hover:shadow-md hover:border-slate-300 transition-all cursor-pointer"
+    },
+    "buttons": {
+      "primary": "inline-flex items-center justify-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors disabled:opacity-50 disabled:pointer-events-none",
+      "secondary": "inline-flex items-center justify-center rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors disabled:opacity-50 disabled:pointer-events-none",
+      "danger": "inline-flex items-center justify-center rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-colors disabled:opacity-50 disabled:pointer-events-none",
+      "ghost": "inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
+    },
+    "inputs": {
+      "default": "flex h-10 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50"
+    },
+    "badges": {
+      "success": "inline-flex items-center rounded-full bg-emerald-50 px-2 py-1 text-xs font-medium text-emerald-700 ring-1 ring-inset ring-emerald-600/20",
+      "warning": "inline-flex items-center rounded-full bg-amber-50 px-2 py-1 text-xs font-medium text-amber-700 ring-1 ring-inset ring-amber-600/20",
+      "error": "inline-flex items-center rounded-full bg-red-50 px-2 py-1 text-xs font-medium text-red-700 ring-1 ring-inset ring-red-600/10",
+      "neutral": "inline-flex items-center rounded-full bg-slate-50 px-2 py-1 text-xs font-medium text-slate-600 ring-1 ring-inset ring-slate-500/10"
+    }
+  },
+  "media": {
+    "images": [
+      {
+        "url": "https://images.unsplash.com/photo-1604701145698-2b38c3e20124?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1OTN8MHwxfHNlYXJjaHwxfHxtb2Rlcm4lMjBsb25kb24lMjBhcGFydG1lbnR8ZW58MHx8fHwxNzc0NTkwNzQ3fDA&ixlib=rb-4.1.0&q=85",
+        "category": "hero",
+        "description": "Modern London apartment interior. Use as hero background image with a light overlay, or in the benefits section."
+      },
+      {
+        "url": "https://images.pexels.com/photos/5096200/pexels-photo-5096200.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+        "category": "feature",
+        "description": "Bright minimalist interior. Use for auth screen background or secondary feature sections."
+      },
+      {
+        "url": "https://images.pexels.com/photos/7135004/pexels-photo-7135004.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+        "category": "background",
+        "description": "Soft abstract blue gradient. Use sparingly as a subtle background accent for CTA sections or empty states."
+      }
+    ]
+  },
+  "instructions_to_main_agent": [
+    "TECH STACK: React, Tailwind CSS, Shadcn UI primitives, Lucide React (for icons). Use .js or .jsx files only, NOT .tsx.",
+    "STYLING: Strictly enforce the 'Swiss & High-Contrast' B2B SaaS look. Minimal gradients. Rely on generous padding, stark white backgrounds, and clear 1px borders.",
+    "NAVIGATION: Create a responsive top navigation for the landing page. For the app shell, build a top header and a left sidebar layout (w-64 on desktop).",
+    "MARKETING PAGE: Must include Hero ('Short-let compliance, handled.'), Benefits, Pricing preview, FAQ, and Final CTA. Use generous spacing (py-24).",
+    "APP SHELL: Build Dashboard, Properties, Compliance, Tasks, Billing, Settings placeholders. Dashboard must display summary cards (Total Properties, Upcoming Expiries, Overdue Items, Missing Documents, Tasks Due).",
+    "DASHBOARD CARDS: Use bento-grid / Control Room grid layout. Must prominently display status colors (red for overdue, amber for missing/expiring) to alert the user immediately.",
+    "AUTHENTICATION: Build email/password signup, login, logout, and a mocked password reset page. Protect app routes so only logged-in users see the dashboard.",
+    "DATABASE: Provide a schema foundation (e.g., Prisma or generic SQL structure) for Users, Subscriptions, Properties, Compliance_Records, Tasks, Notifications, Uploaded_Files.",
+    "TESTING: Add `data-testid` attributes to all buttons, links, form inputs, and key UI elements (e.g., `data-testid=\"start-trial-btn\"`).",
+    "EMPTY STATES: Ensure the dashboard and placeholder pages have strong empty states indicating what to do next (e.g., 'No properties added yet', 'Add your first property')."
+  ]
+}
