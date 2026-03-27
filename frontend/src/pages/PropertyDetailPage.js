@@ -14,10 +14,12 @@ import {
     CheckCircle2,
     FileX,
     Calendar,
-    Trash2
+    Trash2,
+    Zap
 } from 'lucide-react';
 import PropertyModal from '../components/properties/PropertyModal';
 import ComplianceRecordModal from '../components/compliance/ComplianceRecordModal';
+import BulkComplianceModal from '../components/compliance/BulkComplianceModal';
 import EmptyState from '../components/shared/EmptyState';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
@@ -111,6 +113,7 @@ export default function PropertyDetailPage() {
     const [loading, setLoading] = useState(true);
     const [propertyModalOpen, setPropertyModalOpen] = useState(false);
     const [complianceModalOpen, setComplianceModalOpen] = useState(false);
+    const [bulkModalOpen, setBulkModalOpen] = useState(false);
     const [editingRecord, setEditingRecord] = useState(null);
 
     const fetchData = async () => {
@@ -279,25 +282,58 @@ export default function PropertyDetailPage() {
                     <h2 className="text-lg font-semibold text-slate-900" style={{ fontFamily: 'Outfit, sans-serif' }}>
                         Compliance Records
                     </h2>
-                    <Button 
-                        onClick={() => { setEditingRecord(null); setComplianceModalOpen(true); }}
-                        className="bg-blue-600 hover:bg-blue-700 text-white"
-                        data-testid="add-compliance-btn"
-                    >
-                        <Plus className="w-4 h-4 mr-2" />
-                        Add Record
-                    </Button>
+                    <div className="flex items-center gap-2">
+                        {complianceRecords.length === 0 && (
+                            <Button 
+                                variant="outline"
+                                onClick={() => setBulkModalOpen(true)}
+                                className="border-blue-200 text-blue-700 hover:bg-blue-50"
+                                data-testid="quick-setup-btn"
+                            >
+                                <Zap className="w-4 h-4 mr-2" />
+                                Quick Setup
+                            </Button>
+                        )}
+                        <Button 
+                            onClick={() => { setEditingRecord(null); setComplianceModalOpen(true); }}
+                            className="bg-blue-600 hover:bg-blue-700 text-white"
+                            data-testid="add-compliance-btn"
+                        >
+                            <Plus className="w-4 h-4 mr-2" />
+                            Add Record
+                        </Button>
+                    </div>
                 </div>
 
                 {complianceRecords.length === 0 ? (
                     <div className="bg-white rounded-lg border border-slate-200">
-                        <EmptyState
-                            icon={FileX}
-                            title="No compliance records yet"
-                            description="Add compliance records to track certificates, documents, and their expiry dates."
-                            actionLabel="Add First Record"
-                            onAction={() => { setEditingRecord(null); setComplianceModalOpen(true); }}
-                        />
+                        <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
+                            <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mb-6">
+                                <Zap className="w-8 h-8 text-blue-600" />
+                            </div>
+                            <h3 className="text-lg font-semibold text-slate-900 mb-2" style={{ fontFamily: 'Outfit, sans-serif' }}>
+                                Set up compliance tracking
+                            </h3>
+                            <p className="text-sm text-slate-500 max-w-sm mb-6">
+                                Use Quick Setup to add all required certificates at once, or add them one by one.
+                            </p>
+                            <div className="flex items-center gap-3">
+                                <Button 
+                                    onClick={() => setBulkModalOpen(true)}
+                                    className="bg-blue-600 hover:bg-blue-700 text-white"
+                                    data-testid="empty-quick-setup-btn"
+                                >
+                                    <Zap className="w-4 h-4 mr-2" />
+                                    Quick Setup
+                                </Button>
+                                <Button 
+                                    variant="outline"
+                                    onClick={() => { setEditingRecord(null); setComplianceModalOpen(true); }}
+                                >
+                                    Add Single Record
+                                </Button>
+                            </div>
+                        </div>
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -344,6 +380,14 @@ export default function PropertyDetailPage() {
                 onSave={handleSaveComplianceRecord}
                 record={editingRecord}
                 propertyId={propertyId}
+            />
+
+            <BulkComplianceModal
+                isOpen={bulkModalOpen}
+                onClose={() => setBulkModalOpen(false)}
+                onComplete={fetchData}
+                propertyId={propertyId}
+                propertyName={property?.name}
             />
         </div>
     );

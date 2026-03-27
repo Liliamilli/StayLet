@@ -51,6 +51,13 @@ Build a SaaS web app called Staylet that helps UK short-term let hosts track com
   - Auto-fill title from category
   - Auto-calculate status based on expiry date
 
+- **Quick Setup / Bulk Compliance Creation**:
+  - One-click setup for new properties
+  - 9 pre-defined compliance templates
+  - 5 marked as "Recommended" (Gas Safety, EICR, EPC, Insurance, Smoke/CO)
+  - Select all / clear functionality
+  - Bulk creation with success confirmation
+
 - **Status Logic**:
   - compliant: no expiry or expiry > 30 days
   - expiring_soon: expiry within 30 days
