@@ -162,6 +162,47 @@ Build a SaaS web app called Staylet that helps UK short-term let hosts track com
 - API access for Business tier
 - Reporting and analytics dashboard
 
+### Landing Page Conversion Redesign (March 27, 2026)
+- **Hero Section**: New headline "Stop chasing certificates. Start staying compliant."
+  - Trust badge "Built for UK short-let hosts"
+  - Clear value proposition copy
+  - Dual CTA: "Start Your Free Trial" + "Try Demo Mode"
+  - Trust signals row (UK-based, GDPR, Encrypted, 99.9% Uptime)
+
+- **Problem Section**: Dark background with pain points
+  - Expired certificates you forgot about
+  - Scattered documents everywhere
+  - Manual calendar reminders
+  - No clear view across properties
+
+- **How It Works**: 3-step process
+  - Add properties → Upload documents → Stay ahead of deadlines
+
+- **Benefits Section**: 4 cards with stats
+  - Never miss a renewal (90 days advance warning)
+  - One place for everything (100% coverage)
+  - Always audit-ready (<30 sec to find documents)
+  - See all properties at once (1-15 properties supported)
+
+- **Features Grid**: 6 feature highlights
+  - Smart document extraction, UK compliance built-in, Task management
+  - Secure cloud storage, Works on any device, No learning curve
+
+- **Testimonials Section**: 3 placeholder testimonials with 5-star ratings
+  - Social proof from UK hosts in Manchester, London, Bristol
+
+- **Pricing Section**: Improved toggle and card design
+  - "2 months free" badge on annual toggle
+  - Plan highlights above each card
+  - Clearer savings messaging
+
+- **FAQ Section**: 8 comprehensive questions
+  - Covers documents tracked, reminders, uploads, security, UK nations, trial, setup, cancellation
+
+- **Final CTA Section**: Dark background with urgency
+  - "Ready to stop worrying about compliance?"
+  - Dual CTA buttons
+
 ### Document Preview Feature (March 27, 2026)
 - **Document Display on Compliance Cards**:
   - Paperclip icon with document count badge (📎 1)
