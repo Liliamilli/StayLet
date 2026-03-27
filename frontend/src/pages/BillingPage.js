@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import axios from 'axios';
 import { Button } from '../components/ui/button';
+import { Switch } from '../components/ui/switch';
 import { 
     CreditCard, 
     Check, 
@@ -14,7 +15,8 @@ import {
     ArrowRight,
     Loader2,
     Receipt,
-    Calendar
+    Calendar,
+    Percent
 } from 'lucide-react';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
@@ -31,7 +33,7 @@ const PLAN_COLORS = {
     operator: { bg: 'bg-purple-100', text: 'text-purple-700', border: 'border-purple-200', accent: 'bg-purple-600' }
 };
 
-function PlanCard({ plan, planKey, isCurrentPlan, subscription, onSelect, loading }) {
+function PlanCard({ plan, planKey, isCurrentPlan, subscription, onSelect, loading, isAnnual }) {
     const Icon = PLAN_ICONS[planKey] || Building2;
     const colors = PLAN_COLORS[planKey] || PLAN_COLORS.solo;
     const isPopular = planKey === 'portfolio';
@@ -41,6 +43,12 @@ function PlanCard({ plan, planKey, isCurrentPlan, subscription, onSelect, loadin
     );
     const isDowngrade = plan.property_limit < (subscription?.property_limit || 1);
     const cantDowngrade = isDowngrade && (subscription?.property_count || 0) > plan.property_limit;
+    
+    const monthlyPrice = plan.price_monthly;
+    const yearlyPrice = plan.price_yearly;
+    const yearlyMonthly = Math.round(yearlyPrice / 12);
+    const savings = (monthlyPrice * 12) - yearlyPrice;
+    const savingsPercent = Math.round((savings / (monthlyPrice * 12)) * 100);
 
     return (
         <div className={`
@@ -60,6 +68,13 @@ function PlanCard({ plan, planKey, isCurrentPlan, subscription, onSelect, loadin
                     Current Plan
                 </div>
             )}
+            
+            {isAnnual && !isCurrentPlan && (
+                <div className="absolute -top-3 right-4 px-2 py-1 bg-emerald-500 text-white text-xs font-medium rounded-full flex items-center gap-1">
+                    <Percent className="w-3 h-3" />
+                    Save £{savings}/yr
+                </div>
+            )}
 
             <div className="text-center mb-6">
                 <div className={`w-12 h-12 ${colors.bg} rounded-xl flex items-center justify-center mx-auto mb-3`}>
@@ -69,12 +84,27 @@ function PlanCard({ plan, planKey, isCurrentPlan, subscription, onSelect, loadin
                     {plan.name}
                 </h3>
                 <div className="mt-2">
-                    <span className="text-3xl font-bold text-slate-900">£{plan.price_monthly}</span>
-                    <span className="text-slate-500">/month</span>
+                    {isAnnual ? (
+                        <>
+                            <span className="text-3xl font-bold text-slate-900">£{yearlyMonthly}</span>
+                            <span className="text-slate-500">/month</span>
+                            <p className="text-sm text-slate-500 mt-1">
+                                £{yearlyPrice} billed annually
+                            </p>
+                            <p className="text-xs text-emerald-600 font-medium">
+                                Save {savingsPercent}% vs monthly
+                            </p>
+                        </>
+                    ) : (
+                        <>
+                            <span className="text-3xl font-bold text-slate-900">£{monthlyPrice}</span>
+                            <span className="text-slate-500">/month</span>
+                            <p className="text-sm text-slate-500 mt-1">
+                                billed monthly
+                            </p>
+                        </>
+                    )}
                 </div>
-                <p className="text-sm text-slate-500 mt-1">
-                    or £{plan.price_yearly}/year (save £{plan.price_monthly * 12 - plan.price_yearly})
-                </p>
             </div>
 
             <ul className="space-y-3 mb-6">
