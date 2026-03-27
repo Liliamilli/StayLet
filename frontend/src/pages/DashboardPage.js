@@ -9,31 +9,74 @@ import {
     FileX, 
     ListTodo,
     Plus,
-    ArrowRight
+    ArrowRight,
+    Calendar,
+    ChevronRight,
+    CheckCircle2,
+    AlertTriangle
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
 
+const statusConfig = {
+    compliant: { bg: 'bg-emerald-50', text: 'text-emerald-700', icon: CheckCircle2 },
+    expiring_soon: { bg: 'bg-amber-50', text: 'text-amber-700', icon: Clock },
+    overdue: { bg: 'bg-red-50', text: 'text-red-700', icon: AlertCircle }
+};
+
+const categoryLabels = {
+    gas_safety: 'Gas Safety',
+    eicr: 'EICR',
+    epc: 'EPC',
+    insurance: 'Insurance',
+    fire_risk_assessment: 'Fire Risk',
+    pat_testing: 'PAT Testing',
+    legionella: 'Legionella',
+    smoke_co_alarms: 'Smoke/CO',
+    licence: 'Licence',
+    custom: 'Custom'
+};
+
 export default function DashboardPage() {
     const navigate = useNavigate();
-    const [stats, setStats] = useState(null);
+    const [dashboardData, setDashboardData] = useState(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        const fetchStats = async () => {
+        const fetchDashboard = async () => {
             try {
-                const response = await axios.get(`${API_URL}/api/dashboard/stats`);
-                setStats(response.data);
+                // Generate notifications and fetch dashboard data
+                await axios.get(`${API_URL}/api/notifications/generate`);
+                const response = await axios.get(`${API_URL}/api/dashboard/data`);
+                setDashboardData(response.data);
             } catch (error) {
-                console.error('Failed to fetch dashboard stats:', error);
+                console.error('Failed to fetch dashboard data:', error);
+                // Fallback to basic stats if extended endpoint fails
+                try {
+                    const statsResponse = await axios.get(`${API_URL}/api/dashboard/stats`);
+                    setDashboardData({ stats: statsResponse.data, upcoming_expiries: [], overdue_records: [], tasks_due_this_month: [] });
+                } catch (e) {
+                    console.error('Failed to fetch basic stats:', e);
+                }
             } finally {
                 setLoading(false);
             }
         };
 
-        fetchStats();
+        fetchDashboard();
     }, []);
+
+    const formatDate = (dateStr) => {
+        if (!dateStr) return '—';
+        return new Date(dateStr).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+    };
+
+    const getDaysText = (days) => {
+        if (days === 0) return 'Today';
+        if (days === 1) return 'Tomorrow';
+        return `${days} days`;
+    };
 
     if (loading) {
         return (
@@ -48,7 +91,11 @@ export default function DashboardPage() {
         );
     }
 
-    const hasProperties = stats?.total_properties > 0;
+    const stats = dashboardData?.stats || {};
+    const hasProperties = stats.total_properties > 0;
+    const upcomingExpiries = dashboardData?.upcoming_expiries || [];
+    const overdueRecords = dashboardData?.overdue_records || [];
+    const tasksDueThisMonth = dashboardData?.tasks_due_this_month || [];
 
     return (
         <div data-testid="dashboard-page">
@@ -66,38 +113,38 @@ export default function DashboardPage() {
             </div>
 
             {/* Stats cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 mb-8">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-8">
                 <DashboardCard
-                    title="Total Properties"
-                    value={stats?.total_properties || 0}
+                    title="Properties"
+                    value={stats.total_properties || 0}
                     icon={Building2}
                     status="neutral"
                     onClick={() => navigate('/app/properties')}
                 />
                 <DashboardCard
                     title="Expiring Soon"
-                    value={stats?.upcoming_expiries || 0}
+                    value={stats.upcoming_expiries || 0}
                     icon={Clock}
-                    status={stats?.upcoming_expiries > 0 ? 'warning' : 'success'}
+                    status={stats.upcoming_expiries > 0 ? 'warning' : 'success'}
                     onClick={() => navigate('/app/compliance')}
                 />
                 <DashboardCard
                     title="Overdue"
-                    value={stats?.overdue_items || 0}
+                    value={stats.overdue_items || 0}
                     icon={AlertCircle}
-                    status={stats?.overdue_items > 0 ? 'error' : 'success'}
+                    status={stats.overdue_items > 0 ? 'error' : 'success'}
                     onClick={() => navigate('/app/compliance')}
                 />
                 <DashboardCard
-                    title="Missing Records"
-                    value={stats?.missing_records || 0}
+                    title="Missing"
+                    value={stats.missing_records || 0}
                     icon={FileX}
-                    status={stats?.missing_records > 0 ? 'warning' : 'success'}
+                    status={stats.missing_records > 0 ? 'warning' : 'success'}
                     onClick={() => navigate('/app/compliance')}
                 />
                 <DashboardCard
                     title="Tasks Due"
-                    value={stats?.tasks_due || 0}
+                    value={stats.tasks_due || 0}
                     icon={ListTodo}
                     status="neutral"
                     onClick={() => navigate('/app/tasks')}
@@ -128,7 +175,179 @@ export default function DashboardPage() {
                     </div>
                 </div>
             ) : (
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="space-y-6">
+                    {/* Overdue Alert Section - Most prominent if there are overdue items */}
+                    {overdueRecords.length > 0 && (
+                        <div className="bg-red-50 border border-red-200 rounded-lg overflow-hidden">
+                            <div className="px-5 py-4 flex items-center justify-between border-b border-red-200 bg-red-100">
+                                <div className="flex items-center gap-3">
+                                    <AlertTriangle className="w-5 h-5 text-red-600" />
+                                    <h2 className="font-semibold text-red-800" style={{ fontFamily: 'Outfit, sans-serif' }}>
+                                        {overdueRecords.length} Overdue Item{overdueRecords.length !== 1 ? 's' : ''} - Needs Immediate Attention
+                                    </h2>
+                                </div>
+                                <Button 
+                                    size="sm"
+                                    variant="outline"
+                                    className="border-red-300 text-red-700 hover:bg-red-100"
+                                    onClick={() => navigate('/app/compliance')}
+                                >
+                                    View All
+                                </Button>
+                            </div>
+                            <div className="divide-y divide-red-100">
+                                {overdueRecords.slice(0, 3).map((record) => (
+                                    <div 
+                                        key={record.id}
+                                        className="px-5 py-3 flex items-center justify-between hover:bg-red-100/50 cursor-pointer transition-colors"
+                                        onClick={() => navigate(`/app/properties/${record.property_id}`)}
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            <div className="p-2 bg-red-100 rounded-lg">
+                                                <AlertCircle className="w-4 h-4 text-red-600" />
+                                            </div>
+                                            <div>
+                                                <p className="font-medium text-red-900">{record.title}</p>
+                                                <p className="text-sm text-red-600">
+                                                    {record.property_name} • Expired {formatDate(record.expiry_date)}
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <ChevronRight className="w-4 h-4 text-red-400" />
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        {/* Upcoming Expiries */}
+                        <div className="bg-white rounded-lg border border-slate-200 overflow-hidden">
+                            <div className="px-5 py-4 flex items-center justify-between border-b border-slate-100">
+                                <h2 className="font-semibold text-slate-900" style={{ fontFamily: 'Outfit, sans-serif' }}>
+                                    Next 5 Expiries
+                                </h2>
+                                <Button 
+                                    size="sm"
+                                    variant="ghost"
+                                    className="text-blue-600 hover:text-blue-700"
+                                    onClick={() => navigate('/app/compliance')}
+                                >
+                                    View All <ChevronRight className="w-4 h-4 ml-1" />
+                                </Button>
+                            </div>
+                            
+                            {upcomingExpiries.length === 0 ? (
+                                <div className="py-8 text-center">
+                                    <Calendar className="w-10 h-10 text-slate-300 mx-auto mb-3" />
+                                    <p className="text-sm text-slate-500">No upcoming expiries</p>
+                                </div>
+                            ) : (
+                                <div className="divide-y divide-slate-100">
+                                    {upcomingExpiries.map((item) => {
+                                        const config = statusConfig[item.compliance_status] || statusConfig.compliant;
+                                        const StatusIcon = config.icon;
+                                        const isUrgent = item.days_until_expiry <= 7;
+                                        
+                                        return (
+                                            <div 
+                                                key={item.id}
+                                                className="px-5 py-3 flex items-center justify-between hover:bg-slate-50 cursor-pointer transition-colors"
+                                                onClick={() => navigate(`/app/properties/${item.property_id}`)}
+                                            >
+                                                <div className="flex items-center gap-3">
+                                                    <div className={`p-2 rounded-lg ${config.bg}`}>
+                                                        <StatusIcon className={`w-4 h-4 ${config.text}`} />
+                                                    </div>
+                                                    <div>
+                                                        <p className="font-medium text-slate-900">{item.title}</p>
+                                                        <p className="text-sm text-slate-500">
+                                                            {item.property_name} • {categoryLabels[item.category] || item.category}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                                <div className="text-right">
+                                                    <p className={`text-sm font-medium ${isUrgent ? 'text-amber-600' : 'text-slate-600'}`}>
+                                                        {getDaysText(item.days_until_expiry)}
+                                                    </p>
+                                                    <p className="text-xs text-slate-400">{formatDate(item.expiry_date)}</p>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Tasks Due This Month */}
+                        <div className="bg-white rounded-lg border border-slate-200 overflow-hidden">
+                            <div className="px-5 py-4 flex items-center justify-between border-b border-slate-100">
+                                <h2 className="font-semibold text-slate-900" style={{ fontFamily: 'Outfit, sans-serif' }}>
+                                    Tasks Due This Month
+                                </h2>
+                                <Button 
+                                    size="sm"
+                                    variant="ghost"
+                                    className="text-blue-600 hover:text-blue-700"
+                                    onClick={() => navigate('/app/tasks')}
+                                >
+                                    View All <ChevronRight className="w-4 h-4 ml-1" />
+                                </Button>
+                            </div>
+                            
+                            {tasksDueThisMonth.length === 0 ? (
+                                <div className="py-8 text-center">
+                                    <CheckCircle2 className="w-10 h-10 text-emerald-300 mx-auto mb-3" />
+                                    <p className="text-sm text-slate-500">No tasks due this month</p>
+                                    <Button
+                                        size="sm"
+                                        variant="outline"
+                                        className="mt-3"
+                                        onClick={() => navigate('/app/tasks')}
+                                    >
+                                        <Plus className="w-4 h-4 mr-1" />
+                                        Create Task
+                                    </Button>
+                                </div>
+                            ) : (
+                                <div className="divide-y divide-slate-100">
+                                    {tasksDueThisMonth.slice(0, 5).map((task) => (
+                                        <div 
+                                            key={task.id}
+                                            className="px-5 py-3 flex items-center justify-between hover:bg-slate-50 cursor-pointer transition-colors"
+                                            onClick={() => navigate('/app/tasks')}
+                                        >
+                                            <div className="flex items-center gap-3">
+                                                <div className={`p-2 rounded-lg ${task.is_overdue ? 'bg-red-100' : 'bg-blue-100'}`}>
+                                                    <ListTodo className={`w-4 h-4 ${task.is_overdue ? 'text-red-600' : 'text-blue-600'}`} />
+                                                </div>
+                                                <div>
+                                                    <p className={`font-medium ${task.is_overdue ? 'text-red-900' : 'text-slate-900'}`}>
+                                                        {task.title}
+                                                    </p>
+                                                    <p className="text-sm text-slate-500">
+                                                        {task.property_name || 'No property'} • {task.priority}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            <div className="text-right">
+                                                {task.is_overdue ? (
+                                                    <span className="text-xs font-medium px-2 py-1 bg-red-100 text-red-700 rounded-full">
+                                                        Overdue
+                                                    </span>
+                                                ) : task.due_date ? (
+                                                    <p className="text-sm text-slate-600">{formatDate(task.due_date)}</p>
+                                                ) : (
+                                                    <p className="text-sm text-slate-400">No date</p>
+                                                )}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
                     {/* Quick Actions */}
                     <div className="bg-white rounded-lg border border-slate-200 p-6">
                         <h2 
@@ -137,22 +356,22 @@ export default function DashboardPage() {
                         >
                             Quick Actions
                         </h2>
-                        <div className="space-y-3">
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                             <Button 
                                 variant="outline" 
-                                className="w-full justify-between"
+                                className="justify-between h-auto py-3"
                                 onClick={() => navigate('/app/properties')}
                                 data-testid="quick-action-add-property"
                             >
                                 <span className="flex items-center gap-2">
                                     <Plus className="w-4 h-4" />
-                                    Add New Property
+                                    Add Property
                                 </span>
                                 <ArrowRight className="w-4 h-4" />
                             </Button>
                             <Button 
                                 variant="outline" 
-                                className="w-full justify-between"
+                                className="justify-between h-auto py-3"
                                 onClick={() => navigate('/app/properties')}
                                 data-testid="quick-action-add-compliance"
                             >
@@ -164,7 +383,7 @@ export default function DashboardPage() {
                             </Button>
                             <Button 
                                 variant="outline" 
-                                className="w-full justify-between"
+                                className="justify-between h-auto py-3"
                                 onClick={() => navigate('/app/tasks')}
                                 data-testid="quick-action-add-task"
                             >
@@ -175,91 +394,6 @@ export default function DashboardPage() {
                                 <ArrowRight className="w-4 h-4" />
                             </Button>
                         </div>
-                    </div>
-
-                    {/* Alerts Summary */}
-                    <div className="bg-white rounded-lg border border-slate-200 p-6">
-                        <h2 
-                            className="text-lg font-semibold text-slate-900 mb-4"
-                            style={{ fontFamily: 'Outfit, sans-serif' }}
-                        >
-                            Compliance Alerts
-                        </h2>
-                        
-                        {stats?.overdue_items > 0 || stats?.upcoming_expiries > 0 || stats?.missing_records > 0 ? (
-                            <div className="space-y-3">
-                                {stats?.overdue_items > 0 && (
-                                    <div className="flex items-center justify-between p-3 bg-red-50 border border-red-100 rounded-lg">
-                                        <div className="flex items-center gap-3">
-                                            <AlertCircle className="w-5 h-5 text-red-600" />
-                                            <div>
-                                                <p className="font-medium text-red-800">{stats.overdue_items} Overdue</p>
-                                                <p className="text-xs text-red-600">Requires immediate attention</p>
-                                            </div>
-                                        </div>
-                                        <Button 
-                                            size="sm" 
-                                            variant="outline"
-                                            className="border-red-200 text-red-700 hover:bg-red-100"
-                                            onClick={() => navigate('/app/compliance')}
-                                        >
-                                            View
-                                        </Button>
-                                    </div>
-                                )}
-                                
-                                {stats?.upcoming_expiries > 0 && (
-                                    <div className="flex items-center justify-between p-3 bg-amber-50 border border-amber-100 rounded-lg">
-                                        <div className="flex items-center gap-3">
-                                            <Clock className="w-5 h-5 text-amber-600" />
-                                            <div>
-                                                <p className="font-medium text-amber-800">{stats.upcoming_expiries} Expiring Soon</p>
-                                                <p className="text-xs text-amber-600">Within 30 days</p>
-                                            </div>
-                                        </div>
-                                        <Button 
-                                            size="sm" 
-                                            variant="outline"
-                                            className="border-amber-200 text-amber-700 hover:bg-amber-100"
-                                            onClick={() => navigate('/app/compliance')}
-                                        >
-                                            View
-                                        </Button>
-                                    </div>
-                                )}
-                                
-                                {stats?.missing_records > 0 && (
-                                    <div className="flex items-center justify-between p-3 bg-slate-50 border border-slate-200 rounded-lg">
-                                        <div className="flex items-center gap-3">
-                                            <FileX className="w-5 h-5 text-slate-500" />
-                                            <div>
-                                                <p className="font-medium text-slate-800">{stats.missing_records} Missing</p>
-                                                <p className="text-xs text-slate-500">Records not uploaded</p>
-                                            </div>
-                                        </div>
-                                        <Button 
-                                            size="sm" 
-                                            variant="outline"
-                                            onClick={() => navigate('/app/compliance')}
-                                        >
-                                            View
-                                        </Button>
-                                    </div>
-                                )}
-                            </div>
-                        ) : (
-                            <div className="flex items-center justify-center py-8 text-center">
-                                <div>
-                                    <div className="w-12 h-12 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                                        <svg className="w-6 h-6 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                                        </svg>
-                                    </div>
-                                    <p className="text-sm font-medium text-emerald-700">All caught up!</p>
-                                    <p className="text-xs text-slate-500 mt-1">No urgent compliance issues</p>
-                                </div>
-                            </div>
-                        )}
                     </div>
                 </div>
             )}

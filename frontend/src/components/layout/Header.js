@@ -1,9 +1,9 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import NotificationDropdown from '../notifications/NotificationDropdown';
 import { 
     Menu, 
-    Bell, 
     ChevronDown, 
     User, 
     Settings, 
@@ -62,13 +62,7 @@ export default function Header({ onMenuClick }) {
                 </button>
 
                 {/* Notifications */}
-                <button 
-                    className="p-2 hover:bg-slate-100 rounded-lg transition-colors relative"
-                    data-testid="notifications-btn"
-                >
-                    <Bell className="w-5 h-5 text-slate-500" />
-                    <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full" />
-                </button>
+                <NotificationDropdown />
 
                 {/* User dropdown */}
                 <div className="relative ml-2" ref={dropdownRef}>

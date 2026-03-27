@@ -15,11 +15,15 @@ import {
     FileX,
     Calendar,
     Trash2,
-    Zap
+    Zap,
+    ListTodo,
+    MoreVertical,
+    RefreshCw
 } from 'lucide-react';
 import PropertyModal from '../components/properties/PropertyModal';
 import ComplianceRecordModal from '../components/compliance/ComplianceRecordModal';
 import BulkComplianceModal from '../components/compliance/BulkComplianceModal';
+import TaskModal from '../components/tasks/TaskModal';
 import EmptyState from '../components/shared/EmptyState';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL;
@@ -114,6 +118,7 @@ export default function PropertyDetailPage() {
     const [propertyModalOpen, setPropertyModalOpen] = useState(false);
     const [complianceModalOpen, setComplianceModalOpen] = useState(false);
     const [bulkModalOpen, setBulkModalOpen] = useState(false);
+    const [taskModalOpen, setTaskModalOpen] = useState(false);
     const [editingRecord, setEditingRecord] = useState(null);
 
     const fetchData = async () => {
@@ -177,6 +182,40 @@ export default function PropertyDetailPage() {
             fetchData(); // Refresh summary
         } catch (error) {
             console.error('Failed to delete compliance record:', error);
+        }
+    };
+
+    const handleSaveTask = async (taskData) => {
+        try {
+            const response = await axios.post(`${API_URL}/api/tasks`, taskData);
+            setTasks([...tasks, response.data]);
+            setTaskModalOpen(false);
+        } catch (error) {
+            console.error('Failed to save task:', error);
+            throw error;
+        }
+    };
+
+    const handleToggleTaskStatus = async (taskId, newStatus) => {
+        try {
+            const response = await axios.put(`${API_URL}/api/tasks/${taskId}`, { task_status: newStatus });
+            setTasks(tasks.map(t => t.id === taskId ? response.data : t));
+            // Refresh to get any new recurring tasks
+            if (newStatus === 'completed') {
+                setTimeout(fetchData, 500);
+            }
+        } catch (error) {
+            console.error('Failed to update task:', error);
+        }
+    };
+
+    const handleDeleteTask = async (taskId) => {
+        if (!window.confirm('Are you sure you want to delete this task?')) return;
+        try {
+            await axios.delete(`${API_URL}/api/tasks/${taskId}`);
+            setTasks(tasks.filter(t => t.id !== taskId));
+        } catch (error) {
+            console.error('Failed to delete task:', error);
         }
     };
 
@@ -355,15 +394,103 @@ export default function PropertyDetailPage() {
                     <h2 className="text-lg font-semibold text-slate-900" style={{ fontFamily: 'Outfit, sans-serif' }}>
                         Tasks
                     </h2>
-                    <Button variant="outline" onClick={() => navigate('/app/tasks')}>
-                        View All Tasks
-                    </Button>
+                    <div className="flex items-center gap-2">
+                        <Button 
+                            onClick={() => setTaskModalOpen(true)}
+                            className="bg-blue-600 hover:bg-blue-700 text-white"
+                            data-testid="add-task-btn"
+                        >
+                            <Plus className="w-4 h-4 mr-2" />
+                            Add Task
+                        </Button>
+                    </div>
                 </div>
-                <div className="bg-white rounded-lg border border-slate-200 p-6 text-center">
-                    <p className="text-sm text-slate-500">
-                        {tasks.length === 0 ? 'No tasks for this property' : `${tasks.length} task(s) associated with this property`}
-                    </p>
-                </div>
+                
+                {tasks.length === 0 ? (
+                    <div className="bg-white rounded-lg border border-slate-200 p-8 text-center">
+                        <ListTodo className="w-10 h-10 text-slate-300 mx-auto mb-3" />
+                        <p className="text-sm text-slate-500 mb-4">No tasks for this property</p>
+                        <Button 
+                            variant="outline"
+                            onClick={() => setTaskModalOpen(true)}
+                        >
+                            <Plus className="w-4 h-4 mr-2" />
+                            Create Task
+                        </Button>
+                    </div>
+                ) : (
+                    <div className="space-y-3">
+                        {tasks.slice(0, 5).map((task) => {
+                            const isOverdue = task.due_date && new Date(task.due_date) < new Date() && task.task_status !== 'completed';
+                            const isCompleted = task.task_status === 'completed';
+                            
+                            return (
+                                <div 
+                                    key={task.id}
+                                    className={`bg-white border rounded-lg p-4 ${isOverdue ? 'border-red-200 bg-red-50/30' : 'border-slate-200'}`}
+                                >
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-3">
+                                            <button
+                                                onClick={() => handleToggleTaskStatus(task.id, isCompleted ? 'pending' : 'completed')}
+                                                className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors ${
+                                                    isCompleted 
+                                                        ? 'bg-emerald-500 border-emerald-500 text-white' 
+                                                        : 'border-slate-300 hover:border-blue-400'
+                                                }`}
+                                            >
+                                                {isCompleted && <CheckCircle2 className="w-3 h-3" />}
+                                            </button>
+                                            <div>
+                                                <p className={`font-medium ${isCompleted ? 'text-slate-400 line-through' : 'text-slate-900'}`}>
+                                                    {task.title}
+                                                </p>
+                                                <div className="flex items-center gap-2 mt-1">
+                                                    {task.due_date && (
+                                                        <span className={`text-xs flex items-center gap-1 ${isOverdue ? 'text-red-600' : 'text-slate-500'}`}>
+                                                            <Calendar className="w-3 h-3" />
+                                                            {new Date(task.due_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
+                                                            {isOverdue && <AlertCircle className="w-3 h-3" />}
+                                                        </span>
+                                                    )}
+                                                    {task.is_recurring && (
+                                                        <span className="text-xs flex items-center gap-1 text-purple-600">
+                                                            <RefreshCw className="w-3 h-3" />
+                                                            {task.recurrence_pattern}
+                                                        </span>
+                                                    )}
+                                                    <span className={`text-xs px-2 py-0.5 rounded ${
+                                                        task.priority === 'urgent' ? 'bg-red-100 text-red-700' :
+                                                        task.priority === 'high' ? 'bg-amber-100 text-amber-700' :
+                                                        task.priority === 'medium' ? 'bg-blue-100 text-blue-700' :
+                                                        'bg-slate-100 text-slate-600'
+                                                    }`}>
+                                                        {task.priority}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <button
+                                            onClick={() => handleDeleteTask(task.id)}
+                                            className="p-1.5 hover:bg-slate-100 rounded text-slate-400 hover:text-red-500"
+                                        >
+                                            <Trash2 className="w-4 h-4" />
+                                        </button>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                        {tasks.length > 5 && (
+                            <Button 
+                                variant="ghost" 
+                                className="w-full"
+                                onClick={() => navigate('/app/tasks')}
+                            >
+                                View all {tasks.length} tasks
+                            </Button>
+                        )}
+                    </div>
+                )}
             </div>
 
             {/* Modals */}
@@ -388,6 +515,13 @@ export default function PropertyDetailPage() {
                 onComplete={fetchData}
                 propertyId={propertyId}
                 propertyName={property?.name}
+            />
+
+            <TaskModal
+                isOpen={taskModalOpen}
+                onClose={() => setTaskModalOpen(false)}
+                onSave={handleSaveTask}
+                propertyId={propertyId}
             />
         </div>
     );
