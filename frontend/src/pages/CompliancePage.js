@@ -195,8 +195,8 @@ export default function CompliancePage() {
                     </div>
 
                     {/* Table */}
-                    <div className="bg-white rounded-lg border border-slate-200 overflow-hidden">
-                        <table className="w-full">
+                    <div className="bg-white rounded-lg border border-slate-200 overflow-hidden overflow-x-auto">
+                        <table className="w-full min-w-[640px]">
                             <thead className="bg-slate-50">
                                 <tr>
                                     <th className="text-left py-3 px-4 text-xs font-semibold uppercase tracking-wider text-slate-500">

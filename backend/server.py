@@ -294,9 +294,17 @@ async def get_property(property_id: str, current_user: dict = Depends(get_curren
 
 @api_router.post("/properties", response_model=PropertyResponse)
 async def create_property(property_data: PropertyCreate, current_user: dict = Depends(get_current_user)):
+    # Validate required fields are not empty
+    if not property_data.name or not property_data.name.strip():
+        raise HTTPException(status_code=400, detail="Property name is required")
+    if not property_data.address or not property_data.address.strip():
+        raise HTTPException(status_code=400, detail="Address is required")
+    if not property_data.postcode or not property_data.postcode.strip():
+        raise HTTPException(status_code=400, detail="Postcode is required")
+    
     now = datetime.now(timezone.utc).isoformat()
     property_id = str(uuid.uuid4())
-    property_doc = {"id": property_id, "user_id": current_user["id"], "name": property_data.name, "address": property_data.address, "postcode": property_data.postcode.upper(), "uk_nation": property_data.uk_nation, "is_in_london": property_data.is_in_london, "property_type": property_data.property_type, "ownership_type": property_data.ownership_type, "bedrooms": property_data.bedrooms, "notes": property_data.notes, "property_status": "active", "created_at": now, "updated_at": now}
+    property_doc = {"id": property_id, "user_id": current_user["id"], "name": property_data.name.strip(), "address": property_data.address.strip(), "postcode": property_data.postcode.strip().upper(), "uk_nation": property_data.uk_nation, "is_in_london": property_data.is_in_london, "property_type": property_data.property_type, "ownership_type": property_data.ownership_type, "bedrooms": property_data.bedrooms, "notes": property_data.notes, "property_status": "active", "created_at": now, "updated_at": now}
     await db.properties.insert_one(property_doc)
     property_doc["compliance_summary"] = {"total": 0, "compliant": 0, "expiring_soon": 0, "overdue": 0, "missing": 0}
     return property_doc
@@ -344,11 +352,19 @@ async def get_compliance_record(record_id: str, current_user: dict = Depends(get
 
 @api_router.post("/compliance-records", response_model=ComplianceRecordResponse)
 async def create_compliance_record(record_data: ComplianceRecordCreate, current_user: dict = Depends(get_current_user)):
+    # Validate required fields
+    if not record_data.title or not record_data.title.strip():
+        raise HTTPException(status_code=400, detail="Title is required")
+    if not record_data.category or not record_data.category.strip():
+        raise HTTPException(status_code=400, detail="Category is required")
+    if not record_data.property_id or not record_data.property_id.strip():
+        raise HTTPException(status_code=400, detail="Property ID is required")
+    
     if not await db.properties.find_one({"id": record_data.property_id, "user_id": current_user["id"]}, {"_id": 0, "id": 1}):
         raise HTTPException(status_code=404, detail="Property not found")
     now = datetime.now(timezone.utc).isoformat()
     record_id = str(uuid.uuid4())
-    record_doc = {"id": record_id, "user_id": current_user["id"], "property_id": record_data.property_id, "title": record_data.title, "category": record_data.category, "compliance_status": calculate_compliance_status(record_data.expiry_date, True), "issue_date": record_data.issue_date, "expiry_date": record_data.expiry_date, "reminder_preference": record_data.reminder_preference, "notes": record_data.notes, "created_at": now, "updated_at": now}
+    record_doc = {"id": record_id, "user_id": current_user["id"], "property_id": record_data.property_id, "title": record_data.title.strip(), "category": record_data.category.strip(), "compliance_status": calculate_compliance_status(record_data.expiry_date, True), "issue_date": record_data.issue_date, "expiry_date": record_data.expiry_date, "reminder_preference": record_data.reminder_preference, "notes": record_data.notes, "created_at": now, "updated_at": now}
     await db.compliance_records.insert_one(record_doc)
     return record_doc
 

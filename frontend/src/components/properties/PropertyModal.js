@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '../ui/dialog';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
@@ -85,6 +85,14 @@ export default function PropertyModal({ isOpen, onClose, onSave, property }) {
             await onSave(formData);
         } catch (error) {
             console.error('Save error:', error);
+            // Display backend validation errors
+            const errorMsg = error.response?.data?.detail;
+            if (errorMsg) {
+                if (errorMsg.includes('name')) setErrors(prev => ({ ...prev, name: errorMsg }));
+                else if (errorMsg.includes('address')) setErrors(prev => ({ ...prev, address: errorMsg }));
+                else if (errorMsg.includes('postcode')) setErrors(prev => ({ ...prev, postcode: errorMsg }));
+                else setErrors(prev => ({ ...prev, general: errorMsg }));
+            }
         } finally {
             setLoading(false);
         }
@@ -101,9 +109,9 @@ export default function PropertyModal({ isOpen, onClose, onSave, property }) {
                     <DialogTitle style={{ fontFamily: 'Outfit, sans-serif' }}>
                         {property ? 'Edit Property' : 'Add Property'}
                     </DialogTitle>
-                    <p className="text-sm text-slate-500">
+                    <DialogDescription>
                         {property ? 'Update the property details below.' : 'Enter the property details below.'}
-                    </p>
+                    </DialogDescription>
                 </DialogHeader>
 
                 <form onSubmit={handleSubmit} className="space-y-4 py-4">

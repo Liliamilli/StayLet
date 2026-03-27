@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '../ui/dialog';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
@@ -102,6 +102,13 @@ export default function ComplianceRecordModal({ isOpen, onClose, onSave, record,
             await onSave(submitData);
         } catch (error) {
             console.error('Save error:', error);
+            // Display backend validation errors
+            const errorMsg = error.response?.data?.detail;
+            if (errorMsg) {
+                if (errorMsg.includes('Title')) setErrors(prev => ({ ...prev, title: errorMsg }));
+                else if (errorMsg.includes('Category')) setErrors(prev => ({ ...prev, category: errorMsg }));
+                else setErrors(prev => ({ ...prev, general: errorMsg }));
+            }
         } finally {
             setLoading(false);
         }
@@ -121,9 +128,9 @@ export default function ComplianceRecordModal({ isOpen, onClose, onSave, record,
                     <DialogTitle style={{ fontFamily: 'Outfit, sans-serif' }}>
                         {record ? 'Edit Compliance Record' : 'Add Compliance Record'}
                     </DialogTitle>
-                    <p className="text-sm text-slate-500">
+                    <DialogDescription>
                         {record ? 'Update the compliance record details.' : 'Add a new compliance document or certificate.'}
-                    </p>
+                    </DialogDescription>
                 </DialogHeader>
 
                 <form onSubmit={handleSubmit} className="space-y-4 py-4">

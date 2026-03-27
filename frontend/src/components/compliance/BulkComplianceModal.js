@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '../ui/dialog';
 import { Button } from '../ui/button';
 import { Checkbox } from '../ui/checkbox';
 import { Label } from '../ui/label';
@@ -140,9 +140,9 @@ export default function BulkComplianceModal({ isOpen, onClose, onComplete, prope
                         <Zap className="w-5 h-5 text-blue-600" />
                         Quick Setup
                     </DialogTitle>
-                    <p className="text-sm text-slate-500">
+                    <DialogDescription>
                         Select the compliance documents you need to track for {propertyName || 'this property'}.
-                    </p>
+                    </DialogDescription>
                 </DialogHeader>
 
                 {completed ? (
