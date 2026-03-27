@@ -97,6 +97,43 @@ Build a SaaS web app called Staylet that helps UK short-term let hosts track com
 - Verified dashboard counts match actual database data
 - **All 24 backend tests + frontend UI tests passed (100%)**
 
+### Phase 5 - Subscription Billing (March 27, 2026)
+- **Subscription Plans**:
+  - Solo: £19/month (£190/year), 1 property limit
+  - Portfolio: £39/month (£390/year), 5 properties limit
+  - Operator: £79/month (£790/year), 15 properties limit
+
+- **Free Trial System**:
+  - 14-day free trial on signup
+  - Default plan: Solo
+  - Trial status shown in dashboard and billing page
+  - Trial countdown banner with "Upgrade Now" CTA
+
+- **Plan Limit Enforcement**:
+  - Property limit checked before creating new property
+  - UpgradePlanModal shown when limit reached
+  - Clear messaging about current limit and upgrade options
+  - Downgrade blocked if property count exceeds new plan limit
+
+- **Billing Page**:
+  - Current subscription display (plan, status, properties, price)
+  - All 3 plan cards with upgrade/downgrade buttons
+  - Trial banner with countdown
+  - Billing history placeholder
+  - Payment method placeholder (Stripe ready)
+
+- **Landing Page Pricing**:
+  - Premium 3-column pricing cards
+  - "Most Popular" badge on Portfolio plan
+  - Annual pricing with 17% savings shown
+  - Feature comparison for each plan
+
+- **Subscription APIs**:
+  - GET `/api/subscription` - Current subscription details
+  - GET `/api/subscription/plans` - All available plans
+  - GET `/api/subscription/check-limit` - Check if can add property
+  - POST `/api/subscription/change` - Upgrade/downgrade plan
+
 ## Tech Stack
 - React + Tailwind + Shadcn UI
 - FastAPI + MongoDB (Motor async driver)
@@ -107,12 +144,12 @@ Build a SaaS web app called Staylet that helps UK short-term let hosts track com
 ## Prioritized Backlog
 
 ### P0 (Next)
+- Integrate Stripe for actual payment processing
 - Show uploaded documents on compliance record cards
 - Document preview for images and PDFs
 
 ### P1 (Future)
 - Real email sending for password reset & expiry notifications
-- Stripe billing integration
 - Team access/multi-user support
 
 ### P2 (Later)
