@@ -59,7 +59,7 @@ export default function ComplianceRecordModal({ isOpen, onClose, onSave, record,
             });
         } else {
             setFormData({
-                title: '',
+                title: categoryLabels['gas_safety'],
                 category: 'gas_safety',
                 issue_date: '',
                 expiry_date: '',
@@ -70,12 +70,14 @@ export default function ComplianceRecordModal({ isOpen, onClose, onSave, record,
         setErrors({});
     }, [record, isOpen]);
 
-    // Auto-fill title based on category
-    useEffect(() => {
-        if (!record && formData.category && !formData.title) {
-            setFormData(prev => ({ ...prev, title: categoryLabels[formData.category] || '' }));
-        }
-    }, [formData.category, record]);
+    // Auto-fill title based on category change
+    const handleCategoryChange = (value) => {
+        setFormData(prev => ({ 
+            ...prev, 
+            category: value,
+            title: record ? prev.title : (categoryLabels[value] || prev.title)
+        }));
+    };
 
     const validate = () => {
         const newErrors = {};
@@ -119,6 +121,9 @@ export default function ComplianceRecordModal({ isOpen, onClose, onSave, record,
                     <DialogTitle style={{ fontFamily: 'Outfit, sans-serif' }}>
                         {record ? 'Edit Compliance Record' : 'Add Compliance Record'}
                     </DialogTitle>
+                    <p className="text-sm text-slate-500">
+                        {record ? 'Update the compliance record details.' : 'Add a new compliance document or certificate.'}
+                    </p>
                 </DialogHeader>
 
                 <form onSubmit={handleSubmit} className="space-y-4 py-4">
@@ -126,13 +131,7 @@ export default function ComplianceRecordModal({ isOpen, onClose, onSave, record,
                         <Label htmlFor="category">Category *</Label>
                         <Select
                             value={formData.category}
-                            onValueChange={(value) => {
-                                setFormData({ 
-                                    ...formData, 
-                                    category: value,
-                                    title: record ? formData.title : (categoryLabels[value] || '')
-                                });
-                            }}
+                            onValueChange={handleCategoryChange}
                         >
                             <SelectTrigger data-testid="compliance-category-select">
                                 <SelectValue />

@@ -1,7 +1,7 @@
 # Staylet - Product Requirements Document
 
 ## Original Problem Statement
-Build the foundation of a SaaS web app called Staylet that helps UK short-term let hosts track compliance records, expiry dates, required documents, and property admin. Phase 1 focuses on the core app shell and authentication only.
+Build a SaaS web app called Staylet that helps UK short-term let hosts track compliance records, expiry dates, required documents, and property admin.
 
 ## User Personas
 - **Primary**: UK short-term let hosts with 1-15 properties
@@ -18,66 +18,85 @@ Build the foundation of a SaaS web app called Staylet that helps UK short-term l
 1. Public landing page with hero, benefits, pricing preview, FAQ
 2. Email/password authentication (signup, login, logout, reset)
 3. Protected app shell with sidebar navigation
-4. Dashboard with 5 stat cards (properties, expiries, overdue, missing docs, tasks)
-5. Placeholder pages: Properties, Compliance, Tasks, Billing, Settings
-6. MongoDB data models for users, subscriptions, properties, compliance_records, tasks, notifications, uploaded_files
+4. Dashboard with real-time stats
+5. Property CRUD with UK-specific fields
+6. Compliance record tracking with status logic
+7. MongoDB data models for all entities
 
-## What's Been Implemented (Phase 1 Complete - March 27, 2026)
+## What's Been Implemented
 
-### Backend
-- FastAPI server with JWT authentication
-- bcrypt password hashing
-- MongoDB async driver (Motor)
-- Complete data models for all entities
-- Auth endpoints: signup, login, me, reset-password (mocked)
-- Dashboard stats endpoint
-- Properties CRUD endpoints
-- Tasks CRUD endpoints
-- Notifications endpoint
+### Phase 1 (March 27, 2026) - Foundation
+- Landing page with hero, benefits, pricing, FAQ
+- JWT authentication (signup, login, logout, reset mocked)
+- App shell with sidebar navigation
+- Dashboard with placeholder stats
+- Empty state pages for all sections
 
-### Frontend
-- React app with React Router
-- AuthContext for state management
-- ProtectedRoute component
-- Landing page with hero, benefits, pricing, FAQ sections
-- Login, Signup, Reset Password pages
-- App shell with sidebar and header
-- Dashboard with 5 stat cards
-- Empty states for all placeholder pages
-- Responsive design (desktop-first)
+### Phase 2 (March 27, 2026) - Compliance Tracking
+- **Properties CRUD**:
+  - Create/Edit/Delete properties
+  - Fields: name, address, postcode, UK nation, is_in_london, property_type, ownership_type, bedrooms, notes
+  - Search functionality
+  - Property cards with compliance summary
 
-### Design System
-- Outfit font for headings, Inter for body
-- Blue primary color (#2563EB)
-- Status colors: emerald (success), amber (warning), red (error)
-- Clean white backgrounds with subtle borders
-- Shadcn UI components
+- **Property Detail Page**:
+  - Property info display
+  - Compliance summary (total, compliant, expiring_soon, overdue, missing)
+  - Compliance records list
+  - Tasks section (placeholder)
+
+- **Compliance Records CRUD**:
+  - Categories: gas_safety, eicr, epc, insurance, fire_risk_assessment, pat_testing, legionella, smoke_co_alarms, licence, custom
+  - Fields: title, category, issue_date, expiry_date, reminder_preference, notes
+  - Auto-fill title from category
+  - Auto-calculate status based on expiry date
+
+- **Status Logic**:
+  - compliant: no expiry or expiry > 30 days
+  - expiring_soon: expiry within 30 days
+  - overdue: expiry date passed
+  - missing: no document uploaded
+
+- **Dashboard with Real Data**:
+  - Total properties count
+  - Upcoming expiries (within 30 days)
+  - Overdue items
+  - Missing records
+  - Tasks due
+  - Compliance alerts panel
+
+- **Compliance Page**:
+  - List all records across properties
+  - Filter by status and category
+  - Sort by priority (overdue first)
+  - Click to navigate to property
+
+## Tech Stack
+- React + Tailwind + Shadcn UI
+- FastAPI + MongoDB (Motor async driver)
+- JWT auth with bcrypt password hashing
+- Outfit/Inter fonts, Blue (#2563EB) primary
 
 ## Prioritized Backlog
 
-### P0 (Phase 2 - Next)
-- Add Property form and CRUD UI
-- Property detail page
-- Compliance document upload/tracking
-- Expiry date tracking with status indicators
+### P0 (Next)
+- Task management CRUD
+- Email notifications for expiring documents
+- Document file upload and storage
 
-### P1 (Phase 3)
-- Tasks CRUD UI
-- Email notifications (integrate with SendGrid/Resend)
-- Document storage integration
-- Reminder system for expiring documents
-
-### P2 (Future)
-- Social login (Google)
+### P1 (Future)
+- Real email sending for password reset
 - Stripe billing integration
 - Team access/multi-user
+
+### P2 (Later)
+- Social login (Google)
 - Mobile app or PWA
 - API access for Business tier
 - Export/reports
 
 ## Next Tasks
-1. Build Add Property modal/form
-2. Create Property detail page with compliance tracking
-3. Implement document upload functionality
-4. Add real email sending for password reset
-5. Build Tasks management UI
+1. Build Tasks management UI with CRUD
+2. Integrate document upload (object storage)
+3. Add email notifications via SendGrid/Resend
+4. Implement Stripe billing integration

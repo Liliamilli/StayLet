@@ -101,6 +101,9 @@ export default function PropertyModal({ isOpen, onClose, onSave, property }) {
                     <DialogTitle style={{ fontFamily: 'Outfit, sans-serif' }}>
                         {property ? 'Edit Property' : 'Add Property'}
                     </DialogTitle>
+                    <p className="text-sm text-slate-500">
+                        {property ? 'Update the property details below.' : 'Enter the property details below.'}
+                    </p>
                 </DialogHeader>
 
                 <form onSubmit={handleSubmit} className="space-y-4 py-4">
