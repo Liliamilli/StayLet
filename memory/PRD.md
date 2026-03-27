@@ -329,6 +329,35 @@ Build a SaaS web app called Staylet that helps UK short-term let hosts track com
   - GPT-4o via emergentintegrations for natural language (grounded responses)
   - Risk scoring algorithm: Overdue (30pts), Missing (20pts), Expiring (10pts)
 
+### Stabilization Phase (December 2025)
+- **Plan Limit Enforcement**: 
+  - Solo=1, Portfolio=5, Operator=15 properties
+  - 403 error with upgrade message when limit reached
+  - PropertyModal shows upgrade prompt with pricing
+
+- **Sidebar Plan Display**:
+  - Shows actual plan name (Solo/Portfolio/Operator) with (Trial) suffix
+  - Replaced hardcoded "Free Trial" with dynamic user context
+
+- **Data Consistency**:
+  - Dashboard stats match actual database counts
+  - Status badges update correctly based on expiry dates
+
+- **Form Validation**:
+  - Backend validates all required fields
+  - Clear error messages returned to frontend
+
+- **Mobile/Responsive**:
+  - Sidebar hidden by default on mobile
+  - Hamburger menu opens sidebar
+  - Compliance table horizontally scrollable
+
+- **Demo Mode Polish**:
+  - Creates Portfolio trial with 3 UK properties
+  - 12 compliance records with varied statuses
+  - 6 sample tasks
+  - Onboarding marked as completed
+
 ## Next Tasks (P1)
 1. Refactor `server.py` (2100+ lines) into modular `/routes/` and `/models/` directories
 2. Implement real email integration for notifications and password reset (SendGrid/Resend)
