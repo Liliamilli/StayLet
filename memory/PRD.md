@@ -78,6 +78,13 @@ Build a SaaS web app called Staylet that helps UK short-term let hosts track com
   - Sort by priority (overdue first)
   - Click to navigate to property
 
+### Phase 2 Bug Fixes (March 27, 2026)
+- **Backend Validation**: Added server-side validation for empty/whitespace property names, addresses, postcodes, compliance titles and categories
+- **Frontend Error Handling**: Improved form error display for backend validation errors
+- **Accessibility**: Added DialogDescription to all modals for screen reader support
+- **Mobile Responsiveness**: Added overflow-x-auto to compliance table for horizontal scrolling on mobile
+- **All issues verified with 100% test pass rate**
+
 ## Tech Stack
 - React + Tailwind + Shadcn UI
 - FastAPI + MongoDB (Motor async driver)
@@ -107,3 +114,6 @@ Build a SaaS web app called Staylet that helps UK short-term let hosts track com
 2. Integrate document upload (object storage)
 3. Add email notifications via SendGrid/Resend
 4. Implement Stripe billing integration
+
+## Mocked Functionality
+- **Password Reset**: Returns success message without actually sending email (ready for email service integration)
