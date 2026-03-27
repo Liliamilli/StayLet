@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
+import { Dialog, DialogContent, DialogTitle } from '../ui/dialog';
 import { Button } from '../ui/button';
 import axios from 'axios';
 import { 
@@ -105,6 +105,11 @@ export default function DocumentPreviewModal({ isOpen, onClose, document, docume
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
             <DialogContent className="max-w-4xl max-h-[90vh] p-0 overflow-hidden" data-testid="document-preview-modal">
+                {/* Accessible title for screen readers */}
+                <DialogTitle className="sr-only">
+                    Document Preview: {document?.original_filename}
+                </DialogTitle>
+                
                 {/* Header */}
                 <div className="flex items-center justify-between px-4 py-3 border-b bg-slate-50">
                     <div className="flex items-center gap-3 min-w-0">

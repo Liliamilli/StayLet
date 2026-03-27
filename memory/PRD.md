@@ -149,8 +149,8 @@ Build a SaaS web app called Staylet that helps UK short-term let hosts track com
 
 ### P0 (Next)
 - ~~Integrate Stripe for actual payment processing~~ ✅ COMPLETED
-- Show uploaded documents on compliance record cards
-- Document preview for images and PDFs
+- ~~Show uploaded documents on compliance record cards~~ ✅ COMPLETED
+- ~~Document preview for images and PDFs~~ ✅ COMPLETED
 
 ### P1 (Future)
 - Real email sending for password reset & expiry notifications
@@ -161,6 +161,22 @@ Build a SaaS web app called Staylet that helps UK short-term let hosts track com
 - Mobile app or PWA
 - API access for Business tier
 - Reporting and analytics dashboard
+
+### Document Preview Feature (March 27, 2026)
+- **Document Display on Compliance Cards**:
+  - Paperclip icon with document count badge (📎 1)
+  - Document thumbnails showing filename with file type icon
+  - Eye icon on hover for preview action
+  - Support for showing up to 3 documents + "more" indicator
+
+- **Document Preview Modal (DocumentPreviewModal.js)**:
+  - Full-size image preview with dark background
+  - Zoom controls (25% increments, 50% to 300%)
+  - Rotate button (90° clockwise)
+  - Download button
+  - PDF support via iframe
+  - Navigation arrows for multiple documents
+  - Accessible with DialogTitle for screen readers
 
 ### Phase 5 Stripe Integration Stabilization (March 27, 2026)
 - Fixed BillingSuccessPage polling loop - now correctly passes attempt count
