@@ -70,7 +70,7 @@ export default function Sidebar({ isOpen, onClose }) {
                 </div>
 
                 {/* Navigation */}
-                <nav className="p-4 space-y-1">
+                <nav className="p-4 space-y-1 pb-32">
                     {navigation.map((item) => {
                         const Icon = item.icon;
                         const active = isActive(item.href);
