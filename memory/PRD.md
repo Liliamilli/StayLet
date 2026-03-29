@@ -358,26 +358,27 @@ Build a SaaS web app called Staylet that helps UK short-term let hosts track com
   - 6 sample tasks
   - Onboarding marked as completed
 
-### Refactoring & Email Integration (December 2025)
-- **Code Modularization**:
-  - Reduced `server.py` from 2181 to 1829 lines
-  - Created `/routes/auth.py` - All authentication endpoints
-  - Created `/models/database.py` - MongoDB connection and config
-  - Created `/models/schemas.py` - All Pydantic models
-  - Created `/utils/auth.py` - JWT, password utilities
-  - Created `/utils/constants.py` - Plans, categories, settings
-  - Created `/utils/email_service.py` - Resend email integration
+### Refactoring Complete (December 2025)
+- **Code Modularization** - server.py reduced from 2100+ to 870 lines:
+  - `/routes/auth.py` - Authentication (signup, login, demo, password reset)
+  - `/routes/properties.py` - Property CRUD + PDF export
+  - `/routes/compliance.py` - Compliance records CRUD + documents
+  - `/routes/tasks.py` - Tasks CRUD + templates
+  - `/routes/notifications.py` - Notifications + user preferences
+  - `/routes/billing.py` - Subscription + Stripe checkout
+  - `/models/database.py` - MongoDB connection
+  - `/models/schemas.py` - Pydantic models
+  - `/utils/auth.py` - JWT, password utilities
+  - `/utils/constants.py` - Plans, categories
+  - `/utils/email_service.py` - Resend email templates
 
 - **Email Service (Resend)**:
-  - Professional HTML email templates
-  - Password reset emails (when API key configured)
-  - Welcome emails on signup (when API key configured)
-  - Expiry reminder email template ready
+  - Professional HTML templates ready
   - Graceful fallback when RESEND_API_KEY not set
 
 ## Next Tasks (P1)
-1. Continue refactoring: Extract properties, compliance, tasks, billing routes
-2. Configure RESEND_API_KEY in production for real email sending
+1. Configure RESEND_API_KEY in production for real email sending
+2. Set up weekly email digest scheduler
 
 ## Future Tasks (P2)
 1. Team access / multi-user support
